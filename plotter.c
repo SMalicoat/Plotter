@@ -4,8 +4,11 @@
 
 main()
 {
+
+
+
 	//wiringPiSetupGpio(): //need to do this once i start working with the
-	//pi need to look into what pin number sceme to use
+		//pi need to look into what pin number sceme to use
 
 
 	FILE * fp;
