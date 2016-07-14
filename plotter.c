@@ -30,18 +30,23 @@ void clearScreen()
 void basicScreen()
 {
 	clearScreen();
-//	int lines = atoi(getenv("LINES"));
-//	int columns = atoi(getenv("COLUMNS"));
-//	printf("the number of lines is:%i and the number of colums is :%i",lines,columns);
-//	print
+	init_pair(1,COLOR_BLACK,COLOR_WHITE);
+	attrset(COLOR_PAIR(1));
+	move(0,0);
+	for(int i = 0; i < COLS;i++)
+		printw(" ");
+	mvprintw(0,COLS/2 - 5,"CNC PLOTTER");
+	refresh();
+	attroff(COLOR_PAIR(1));
 }
-main()
+int main()
 {
 
 	//wiringPiSetupGpio(): //need to do this once i start working with the
 		//pi need to look into what pin number sceme to use
 
 	initscr();	
+	start_color();
 /*	FILE * fp;
 	char * line = NULL;
 	size_t len = 0;
@@ -63,12 +68,7 @@ main()
 //	if(line)
 //		free(line);
 	
-	printw("\n\n");	
-	refresh();
-	getchar();
-	getchar();
-	clearScreen();
-	DIR *dp;
+/*	DIR *dp;
 	struct dirent *ep;
 	dp = opendir ("./");
 	if(dp != NULL)
@@ -81,10 +81,9 @@ main()
 	}
 	else 
 		perror("Could't open the directory");
-	getchar();
-	getchar();
+		*/
 	basicScreen();
-	
+	getch();	
 	endwin();
 	return 0;
 }
