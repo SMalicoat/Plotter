@@ -2,6 +2,8 @@
 #include <dirent.h>
 #include <wiringPi.h>
 #include <unistd.h>
+#include <ncurses.h>
+
 #define RED   "\x1B[31m"
 #define GRN   "\x1B[32m"
 #define YEL   "\x1B[33m"
@@ -24,14 +26,23 @@ void clearScreen()
 	const char* CLEAR_SCREE_ANSI = "\e[1;1H\e[2J";
 	write(STDOUT_FILENO,CLEAR_SCREE_ANSI,12);
 }
+
+void basicScreen()
+{
+	clearScreen();
+//	int lines = atoi(getenv("LINES"));
+//	int columns = atoi(getenv("COLUMNS"));
+//	printf("the number of lines is:%i and the number of colums is :%i",lines,columns);
+//	print
+}
 main()
 {
 
 	//wiringPiSetupGpio(): //need to do this once i start working with the
 		//pi need to look into what pin number sceme to use
 
-
-	FILE * fp;
+	initscr();	
+/*	FILE * fp;
 	char * line = NULL;
 	size_t len = 0;
 	ssize_t read;
@@ -44,14 +55,17 @@ main()
 	}
 	while((read = getline(&line, &len, fp)) != -1)
 	{
-		printf("%s",line);
+		printw("%s",line);
+		refresh();
 	}
 	
-	fclose(fp);
+	fclose(fp);*/
 //	if(line)
 //		free(line);
 	
-	printf("\n\n");	
+	printw("\n\n");	
+	refresh();
+	getchar();
 	getchar();
 	clearScreen();
 	DIR *dp;
@@ -61,13 +75,17 @@ main()
 	{
 		while (ep = readdir (dp))
 			if(ep->d_name[0]!='.')
-				puts(ep->d_name);
-		(void) close(dp);
+				printw("%s  ",ep->d_name);
+		(void) closedir(dp);
+		refresh();
 	}
 	else 
 		perror("Could't open the directory");
+	getchar();
+	getchar();
+	basicScreen();
 	
-
+	endwin();
 	return 0;
 }
 
