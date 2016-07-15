@@ -11,7 +11,7 @@
 
 
 
-void print_menu(WINDOW *menu_win, int highlight,char * choices[][2], int n_choices);
+void print_menu(WINDOW *menu_win, int highlight,char * choices[][2], int n_choices,int startx,int starty);
 int menus(char * choices[][2],int n_choices);
 int main()
 {
@@ -64,15 +64,15 @@ int menus(char* choices[][2],int n_choices)
 	int choice = 0;
 	int c;
 
-	int startx = (80 - WIDTH) / 2;
-	int starty = 4+(24 - HEIGHT) / 2;
+	int startx = (80 - WIDTH) / 3;
+	int starty = 4+(24 - HEIGHT) / 3;
 
 	menu_win = newwin(HEIGHT, WIDTH, starty, startx);
 	keypad(menu_win, TRUE);
 	mvprintw(4, 0, "Use arrow keys to go up and down, Press enter to select a choice");
 	refresh();
 	
-	print_menu(menu_win, highlight,choices,n_choices);
+	print_menu(menu_win, highlight,choices,n_choices,startx,starty);
 	while(1)
 	{
 	c = wgetch(menu_win);
@@ -98,7 +98,7 @@ int menus(char* choices[][2],int n_choices)
 				refresh();
 				break;
 		}
-		print_menu(menu_win, highlight,choices,n_choices);
+		print_menu(menu_win, highlight,choices,n_choices,startx,starty);
 		if(choice != 0)	/* User did a choice come out of the infinite loop */
 			break;
 	}	
@@ -110,7 +110,7 @@ int menus(char* choices[][2],int n_choices)
 }
 
 
-void print_menu(WINDOW *menu_win, int highlight,char * choices[][2],int n_choices)
+void print_menu(WINDOW *menu_win, int highlight,char * choices[][2],int n_choices,int startx,int starty)
 {
 	int x, y, i;	
 
@@ -128,6 +128,8 @@ void print_menu(WINDOW *menu_win, int highlight,char * choices[][2],int n_choice
 			mvwprintw(menu_win, y, x, "%s", choices[i][0]);
 		++y;
 	}
-//	mvwprintw(menu_win, 2*y,x,"%s",choices[highlight -1][1]);
+	WINDOW *descript_win = newwin(HEIGHT, WIDTH, starty, startx+WIDTH+2);
+	mvwprintw(descript_win, 0,0,"%s",choices[highlight -1][1]);
 	wrefresh(menu_win);
+	wrefresh(descript_win);
 }
