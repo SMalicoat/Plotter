@@ -21,23 +21,87 @@
 	printf(CYN "cyan\n" RESET);
 	printf(WHT "white\n" RESET);
 */	      
+
+
+bool quit = false;
 void clearScreen()
 {
 	const char* CLEAR_SCREE_ANSI = "\e[1;1H\e[2J";
 	write(STDOUT_FILENO,CLEAR_SCREE_ANSI,12);
 }
 
-void basicScreen()
+int basicScreen()
 {
 	clearScreen();
 	init_pair(1,COLOR_BLACK,COLOR_WHITE);
-	attrset(COLOR_PAIR(1));
+	attron(COLOR_PAIR(1));
 	move(0,0);
 	for(int i = 0; i < COLS;i++)
 		printw(" ");
 	mvprintw(0,COLS/2 - 5,"CNC PLOTTER");
-	refresh();
 	attroff(COLOR_PAIR(1));
+	int letters;
+	mvprintw(4,COLS/2-56,"Hello and welcome to my creation. To start please select with arrow keys what mod you would like to start with.%n",&letters);
+	//printw(": %i",letters);
+	attron(COLOR_PAIR(1));
+	mvprintw(15,COLS/2-9,"[1] Plot File");
+	attroff(COLOR_PAIR(1));
+	mvprintw(16,COLS/2-9,"[2] Manual Control");
+	mvprintw(17,COLS/2-9,"[3] Exit");
+	move(LINES * .9,8);
+	int highlight = 0;
+	bool selected = false;
+	while(!quit)
+	{
+		int c = getch();
+		switch(c)
+		{
+			case KEY_UP:
+				highlight--;
+				if(highlight<1)
+					highlight = 1;
+				break;
+			case KEY_DOWN:
+				highlight++;
+				if(highlight > 3)
+					highlight = 3;
+				break;
+			case 113:
+			case 81:
+		//	case 27:
+				quit = true;
+				break;
+			
+			case 10:
+				selected = true;
+				break;
+			default:
+				printw("did not reconize the command: %c",c);
+				break;
+		}
+		attron(COLOR_PAIR(1));
+		switch(highlight)
+		{
+			case 1:
+				mvprintw(15,COLS/2-9,"[1] Plot File");
+				break;
+			case 2:
+				mvprintw(16,COLS/2-9,"[2] Manual Control");
+				break;
+			case 3:
+				mvprintw(17,COLS/2-9,"[3] Exit");
+				break;
+			default:
+			break;
+		}
+		attroff(COLOR_PAIR(1));
+
+	}
+	if(quit)
+		return 0;
+	printw("you selected option: %i",highlight);
+	refresh();
+	return 1;
 }
 int main()
 {
@@ -47,6 +111,8 @@ int main()
 
 	initscr();	
 	start_color();
+	noecho();
+	cbreak();
 /*	FILE * fp;
 	char * line = NULL;
 	size_t len = 0;
@@ -83,6 +149,9 @@ int main()
 		perror("Could't open the directory");
 		*/
 	basicScreen();
+	while(true)
+	{
+	}
 	getch();	
 	endwin();
 	return 0;
