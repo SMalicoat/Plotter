@@ -8,25 +8,26 @@
 #define FILESELECT 1
 #define PLOTDISPLAY 2
 
-int startx = 0;
-int starty = 0;
 
 
-void print_menu(WINDOW *menu_win, int highlight,char ** choices, int n_choices);
-int menus(char ** choices,int n_choices);
+
+void print_menu(WINDOW *menu_win, int highlight,char * choices[][2], int n_choices);
+int menus(char * choices[][2],int n_choices);
 int main()
 {
 	initscr();
 	clear();
 	noecho();
 	cbreak();
-	char *choices[] = { 
-			"Plot File",
-			"Manual Control",
-			"Exit",
+	char  *choices[][2] = { 
+			{"Plot File","You select a file to plot and will plot the file on the plotter"},
+			{"Manual Control","Will give you full control over the plotter for debuging or demenstration"},
+			{"Exit","Will exit the prgram"},
 			};
 /* Line buffering disabled. pass on everything */
-	int n_choices = sizeof(choices) / sizeof(char *);
+	int n_choices = sizeof(choices) / (2*sizeof(char *));
+	//mvprintw(3,4,"the vale of sizeof(choices):%d\nvale of sieof(char *):%d\nsize of sizeof(*choices):%d\nsize of n_choices:%d",sizeof(choices),sizeof(char *),sizeof(*choices),n_choices);
+//	printw("\nthe first two strings are :%s \n and %s",choices[0][0],choices[0][1]);
 	menus(choices,n_choices);
 	endwin();
 	return 0;
@@ -56,15 +57,15 @@ int main()
 
 //			//		break;
 //	}
-int menus(char ** choices,int n_choices)
+int menus(char* choices[][2],int n_choices)
 	{
 	WINDOW *menu_win;
 	int highlight = 1;
 	int choice = 0;
 	int c;
 
-	startx = (80 - WIDTH) / 2;
-	starty = 4+(24 - HEIGHT) / 2;
+	int startx = (80 - WIDTH) / 2;
+	int starty = 4+(24 - HEIGHT) / 2;
 
 	menu_win = newwin(HEIGHT, WIDTH, starty, startx);
 	keypad(menu_win, TRUE);
@@ -109,7 +110,7 @@ int menus(char ** choices,int n_choices)
 }
 
 
-void print_menu(WINDOW *menu_win, int highlight,char ** choices,int n_choices)
+void print_menu(WINDOW *menu_win, int highlight,char * choices[][2],int n_choices)
 {
 	int x, y, i;	
 
@@ -120,12 +121,13 @@ void print_menu(WINDOW *menu_win, int highlight,char ** choices,int n_choices)
 		if(highlight == i + 1) /* High light the present choice */
 		{
 			wattron(menu_win, A_REVERSE); 
-			mvwprintw(menu_win, y, x, "%s", choices[i]);
+			mvwprintw(menu_win, y, x, "%s", choices[i][0]);
 			wattroff(menu_win, A_REVERSE);
 		}
 		else
-			mvwprintw(menu_win, y, x, "%s", choices[i]);
+			mvwprintw(menu_win, y, x, "%s", choices[i][0]);
 		++y;
 	}
+//	mvwprintw(menu_win, 2*y,x,"%s",choices[highlight -1][1]);
 	wrefresh(menu_win);
 }
