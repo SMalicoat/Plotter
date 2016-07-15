@@ -1,24 +1,51 @@
 #include <stdio.h>
 #include <ncurses.h>
+#include <ncurses.h>
 
 #define WIDTH 30
 #define HEIGHT 10 
-
 #define TOPMENU 0
 #define FILESELECT 1
 #define PLOTDISPLAY 2
 
+#define RED   "\x1B[31m"
+#define GRN   "\x1B[32m"
+#define YEL   "\x1B[33m"
+#define BLU   "\x1B[34m"
+#define MAG   "\x1B[35m"
+#define CYN   "\x1B[36m"
+#define WHT   "\x1B[37m"
+#define RESET "\x1B[0m"
+/*
+ printf(RED "red\n" RESET);
+ printf(GRN "green\n" RESET);
+ printf(YEL "yellow\n" RESET);
+ printf(BLU "blue\n" RESET);
+ printf(MAG "magenta\n" RESET);
+ printf(CYN "cyan\n" RESET);
+ printf(WHT "white\n" RESET);
+*/
 
 
-
+bool quit = false;
+void clearScreen();
 void print_menu(WINDOW *menu_win, int highlight,char * choices[][2], int n_choices,int startx,int starty);
 int menus(char * choices[][2],int n_choices);
 int main()
 {
-	initscr();
+       	initscr();
 	clear();
 	noecho();
 	cbreak();
+	start_color();
+	init_pair(1,COLOR_BLACK,COLOR_WHITE);
+        attron(COLOR_PAIR(1));
+        move(0,0);
+        for(int i = 0; i < COLS;i++)
+                printw(" ");
+        mvprintw(0,COLS/2 - 5,"CNC PLOTTER");
+        attroff(COLOR_PAIR(1));
+
 	char  *choices[][2] = { 
 			{"Plot File","You select a file to plot and will plot the file on the plotter"},
 			{"Manual Control","Will give you full control over the plotter for debuging or demenstration"},
@@ -69,7 +96,8 @@ int menus(char* choices[][2],int n_choices)
 
 	menu_win = newwin(HEIGHT, WIDTH, starty, startx);
 	keypad(menu_win, TRUE);
-	mvprintw(4, 0, "Use arrow keys to go up and down, Press enter to select a choice");
+        mvprintw(2,2,"Hello and welcome to my creation. To start please select with the arrow keys");
+	//mvprintw(4, 0, "Use arrow keys to go up and down, Press enter to select a choice");
 	refresh();
 	
 	print_menu(menu_win, highlight,choices,n_choices,startx,starty);
@@ -128,8 +156,8 @@ void print_menu(WINDOW *menu_win, int highlight,char * choices[][2],int n_choice
 			mvwprintw(menu_win, y, x, "%s", choices[i][0]);
 		++y;
 	}
-	WINDOW *descript_win = newwin(HEIGHT, WIDTH, starty, startx+WIDTH+2);
-	mvwprintw(descript_win, 0,0,"%s",choices[highlight -1][1]);
+	WINDOW *descript_win = newwin(HEIGHT, WIDTH+4, starty, startx+WIDTH+2);
+	mvwprintw(descript_win, 2,2,"%s",choices[highlight -1][1]);
 	wrefresh(menu_win);
 	wrefresh(descript_win);
 }
