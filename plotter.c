@@ -59,6 +59,40 @@ int main()
 	endwin();
 	return 0;
 }
+/*	FILE * fp;
+	char * line = NULL;
+	size_t len = 0;
+	ssize_t read;
+	fp = fopen ("sampleGcode.txt","r");
+	if(fp == NULL)
+	{
+		perror("open failed");
+		return 2;
+	}
+	while((read = getline(&line, &len, fp)) != -1)
+	{
+		printw("%s",line);
+		refresh();
+	}
+
+	fclose(fp);*/
+//	if(line)
+//		free(line);
+
+/*	DIR *dp;
+	struct dirent *ep;
+	dp = opendir ("./");
+	if(dp != NULL)
+	{
+		while (ep = readdir (dp))
+			if(ep->d_name[0]!='.')
+				printw("%s  ",ep->d_name);
+		(void) closedir(dp);
+		refresh();
+	}
+	else 
+		perror("Could't open the directory");
+*/
 //switch(option)
 //	{
 //		case PLOTDISPLAY:
