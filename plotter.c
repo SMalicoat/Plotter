@@ -38,6 +38,7 @@ int manualControl();
 void movex(int duration);
 void movey(int duration);
 void pen(int steps);
+int servoControl();
 int main()
 {
 	wiringPiSetup();
@@ -57,6 +58,8 @@ int main()
 //	printw("\nthe first two strings are :%s \n and %s",choices[0][0],choices[0][1]);
 	int result = menus(choices,n_choices);
 	clearScreen();
+	if(result == 3)
+		servoControl();
 	if(result == 2)
 	{
 		manualControl();	
@@ -133,6 +136,59 @@ void movey(int duration)
 void pen(int steps)
 {
 }
+int servoControl()
+{
+	clearScreen();
+	mvprintw(3,0,"Servo control to manual mess with the timing of the servo, enter a value then hit enter and use right arrow to execute the value and hit backspace to got back to change the value"):
+	refresh();
+	keypad(stdscr,TRUE);
+	nodelay();
+	int choice = 0;
+	while(choice == 0)
+	{
+		echo();
+		mvprint(13,15,"Value to run at:");
+		char valueString [5];
+		getstr(valueString,5);
+		int value = atoi(valueString);
+		while(1)
+		{
+			while(int c = getch() == ERR)
+			{
+				pen(0);
+				delay(15);
+			}
+			switch(c)
+			{
+				case 'q':
+				case 'Q':
+					if(DEBUG)
+					mvprintw(20,3,"Quit has been pressed!");
+					choice = 1;
+					break;
+				case KEY_RIGHT:
+					if(DEBUG)
+					mvprintw(20,3,"Right arrrow pressed!");
+					movey(50);
+					break;
+				case KEY_BACKSPACE:
+					if(DEBUG)
+					mvprintw(20,3,"BackSpace pressed!");
+					pen(-1);
+					break;
+				default:
+					mvprintw(24, 3, "Charcter pressed is = %3d Hopefully it can be printed as '%c'", c, c);
+					refresh();
+					break;
+			}
+			refresh();
+			if(choice != 0)	/* User did a choice come out of the infinite loop */
+				break;
+		}
+	}
+	return 0;
+}
+
 int manualControl()
 {
 	clearScreen();
