@@ -4,7 +4,7 @@
 #include <wiringPi.h>
 #include <string.h>
 #include <stdlib.h>
-#include <softServo.c>
+#include <softServo.h>
 
 #define WIDTH 30
 #define HEIGHT 10 
