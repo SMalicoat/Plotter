@@ -2,6 +2,9 @@
 #include <ncurses.h>
 #include <ncurses.h>
 #include <wiringPi.h>
+#include <string.h>
+#include <stdlib.h>
+#include <softServo.c>
 
 #define WIDTH 30
 #define HEIGHT 10 
@@ -10,6 +13,9 @@
 #define PLOTDISPLAY 2
 
 #define DEBUG 0
+#define SERVOPIN 1
+#define STOPPULSE 150
+
 
 #define RED   "\x1B[31m"
 #define GRN   "\x1B[32m"
@@ -29,7 +35,7 @@
  printf(WHT "white\n" RESET);
 */
 
-
+int pulse = -1;
 bool quit = false;
 void clearScreen();
 void print_menu(WINDOW *menu_win, int highlight,char * choices[][2], int n_choices,int startx,int starty,WINDOW * descript_win);
@@ -50,6 +56,7 @@ int main()
 	char  *choices[][2] = { 
 			{"Plot File","You select a file to plot and will plot the file on the plotter"},
 			{"Manual Control","Will give you full control over the plotter for debuging or demenstration"},
+			{"Servo Control","Lets you enter and test different duration of pulses sent to the servo for fine tuning and debugging"},
 			{"Exit","Will exit the prgram"},
 			};
 /* Line buffering disabled. pass on everything */
@@ -135,46 +142,62 @@ void movey(int duration)
 }
 void pen(int steps)
 {
+	if(pulse == -1)
+		softServoSetup(SERVOPIN);
+	if(steps == 0&&pulse!=STOPPULSE)
+		pulse = STOPPULSE;
+	else if(steps == pulse)
+		return;
+
+	softServoWrite(SERVOPIN,steps);
+	pulse = steps;
 }
 int servoControl()
 {
 	clearScreen();
-	mvprintw(3,0,"Servo control to manual mess with the timing of the servo, enter a value then hit enter and use right arrow to execute the value and hit backspace to got back to change the value"):
+	mvprintw(3,0,"Servo control to manual mess with the timing of the servo, enter a value then hit enter and use right arrow to execute the value and hit backspace to got back to change the value");
 	refresh();
 	keypad(stdscr,TRUE);
-	nodelay();
 	int choice = 0;
-	while(choice == 0)
+	while(1)
 	{
 		echo();
-		mvprint(13,15,"Value to run at:");
+		nodelay(stdscr,0);
+		move(13,0);
+		clrtoeol();
+		mvprintw(13,15,"Value to run at:");
 		char valueString [5];
-		getstr(valueString,5);
+		getnstr(valueString,5);
 		int value = atoi(valueString);
-		while(1)
+		choice = 0;
+		mvprintw(14,12,"Value entered: %i",value);
+		while(choice == 0)
 		{
-			while(int c = getch() == ERR)
+			keypad(stdscr,TRUE);
+			nodelay(stdscr,1);
+		//	noecho();
+			int c = getch();
+			while( c == ERR)
 			{
+
 				pen(0);
 				delay(15);
+				c = getch();
 			}
 			switch(c)
 			{
 				case 'q':
 				case 'Q':
-					if(DEBUG)
 					mvprintw(20,3,"Quit has been pressed!");
 					choice = 1;
 					break;
 				case KEY_RIGHT:
-					if(DEBUG)
 					mvprintw(20,3,"Right arrrow pressed!");
-					movey(50);
+					pen(value);
 					break;
 				case KEY_BACKSPACE:
-					if(DEBUG)
 					mvprintw(20,3,"BackSpace pressed!");
-					pen(-1);
+					choice = 2;
 					break;
 				default:
 					mvprintw(24, 3, "Charcter pressed is = %3d Hopefully it can be printed as '%c'", c, c);
@@ -185,6 +208,8 @@ int servoControl()
 			if(choice != 0)	/* User did a choice come out of the infinite loop */
 				break;
 		}
+		if(choice == 1)
+			break;
 	}
 	return 0;
 }
