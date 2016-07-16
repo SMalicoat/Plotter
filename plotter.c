@@ -29,8 +29,10 @@
 
 bool quit = false;
 void clearScreen();
-void print_menu(WINDOW *menu_win, int highlight,char * choices[][2], int n_choices,int startx,int starty);
+void print_menu(WINDOW *menu_win, int highlight,char * choices[][2], int n_choices,int startx,int starty,WINDOW * descript_win);
 int menus(char * choices[][2],int n_choices);
+int manualControl();
+
 int main()
 {
        	initscr();
@@ -38,14 +40,7 @@ int main()
 	noecho();
 	cbreak();
 	start_color();
-	init_pair(1,COLOR_BLACK,COLOR_WHITE);
-        attron(COLOR_PAIR(1));
-        move(0,0);
-        for(int i = 0; i < COLS;i++)
-                printw(" ");
-        mvprintw(0,COLS/2 - 5,"CNC PLOTTER");
-        attroff(COLOR_PAIR(1));
-
+	clearScreen();
 	char  *choices[][2] = { 
 			{"Plot File","You select a file to plot and will plot the file on the plotter"},
 			{"Manual Control","Will give you full control over the plotter for debuging or demenstration"},
@@ -55,7 +50,13 @@ int main()
 	int n_choices = sizeof(choices) / (2*sizeof(char *));
 	//mvprintw(3,4,"the vale of sizeof(choices):%d\nvale of sieof(char *):%d\nsize of sizeof(*choices):%d\nsize of n_choices:%d",sizeof(choices),sizeof(char *),sizeof(*choices),n_choices);
 //	printw("\nthe first two strings are :%s \n and %s",choices[0][0],choices[0][1]);
-	menus(choices,n_choices);
+	int result = menus(choices,n_choices);
+	clearScreen();
+	if(result == 2)
+	{
+		manualControl();	
+	}
+	
 	endwin();
 	return 0;
 }
@@ -118,9 +119,36 @@ int main()
 
 //			//		break;
 //	}
+int manualControl()
+{
+	clearScreen();
+	mvprintw(3,0,"\tUP--Up Arrow\tDown--Down Arrow\tLeft--Left Arrow\tRight--Right Arrow\t\t\t\tPen Up--Page Up\t\tPen Down--Page Down");
+	refresh();
+	getch();
+	while(1)
+	{
+	}
+	return 0;
+}
+
+void clearScreen()
+{
+	clear();
+	init_pair(1,COLOR_BLACK,COLOR_WHITE);
+        attron(COLOR_PAIR(1));
+        move(0,0);
+        for(int i = 0; i < COLS;i++)
+                printw(" ");
+        mvprintw(0,COLS/2 - 5,"CNC PLOTTER");
+        attroff(COLOR_PAIR(1));
+	refresh();
+
+
+}
 int menus(char* choices[][2],int n_choices)
 	{
 	WINDOW *menu_win;
+	WINDOW *descript_win;
 	int highlight = 1;
 	int choice = 0;
 	int c;
@@ -134,7 +162,7 @@ int menus(char* choices[][2],int n_choices)
 	//mvprintw(4, 0, "Use arrow keys to go up and down, Press enter to select a choice");
 	refresh();
 	
-	print_menu(menu_win, highlight,choices,n_choices,startx,starty);
+	print_menu(menu_win, highlight,choices,n_choices,startx,starty,descript_win);
 	while(1)
 	{
 	c = wgetch(menu_win);
@@ -160,19 +188,24 @@ int menus(char* choices[][2],int n_choices)
 				refresh();
 				break;
 		}
-		print_menu(menu_win, highlight,choices,n_choices,startx,starty);
+		print_menu(menu_win, highlight,choices,n_choices,startx,starty,descript_win);
 		if(choice != 0)	/* User did a choice come out of the infinite loop */
 			break;
 	}	
-	mvprintw(23, 0, "You chose choice %d with choice string %s\n", choice, choices[choice - 1]);
-	clrtoeol();
+//	mvprintw(23, 0, "You chose choice %d with choice string %s\n", choice, choices[choice - 1]);
+	//clrtoeol();
 	refresh();
-	delwin(menu_win);
+	//werase(menu_win);
+	//werase(descript_win);
+	clear();
+	refresh();
+	//delwin(menu_win);
+	//delwin(descript_win);
 	return choice;
 }
 
 
-void print_menu(WINDOW *menu_win, int highlight,char * choices[][2],int n_choices,int startx,int starty)
+void print_menu(WINDOW *menu_win, int highlight,char * choices[][2],int n_choices,int startx,int starty,WINDOW * descript_win)
 {
 	int x, y, i;	
 
@@ -190,7 +223,7 @@ void print_menu(WINDOW *menu_win, int highlight,char * choices[][2],int n_choice
 			mvwprintw(menu_win, y, x, "%s", choices[i][0]);
 		++y;
 	}
-	WINDOW *descript_win = newwin(HEIGHT, WIDTH+4, starty, startx+WIDTH+2);
+	 descript_win = newwin(HEIGHT, WIDTH+4, starty, startx+WIDTH+2);
 	mvwprintw(descript_win, 2,2,"%s",choices[highlight -1][1]);
 	wrefresh(menu_win);
 	wrefresh(descript_win);
