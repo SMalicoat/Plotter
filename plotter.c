@@ -1,12 +1,15 @@
 #include <stdio.h>
 #include <ncurses.h>
 #include <ncurses.h>
+#include <wiringPi.h>
 
 #define WIDTH 30
 #define HEIGHT 10 
 #define TOPMENU 0
 #define FILESELECT 1
 #define PLOTDISPLAY 2
+
+#define DEBUG 0
 
 #define RED   "\x1B[31m"
 #define GRN   "\x1B[32m"
@@ -32,11 +35,13 @@ void clearScreen();
 void print_menu(WINDOW *menu_win, int highlight,char * choices[][2], int n_choices,int startx,int starty,WINDOW * descript_win);
 int menus(char * choices[][2],int n_choices);
 int manualControl();
-
+void movex(int duration);
+void movey(int duration);
+void pen(int steps);
 int main()
 {
+	wiringPiSetup();
        	initscr();
-	clear();
 	noecho();
 	cbreak();
 	start_color();
@@ -119,14 +124,71 @@ int main()
 
 //			//		break;
 //	}
+void movex(int duration)
+{
+}
+void movey(int duration)
+{
+}
+void pen(int steps)
+{
+}
 int manualControl()
 {
 	clearScreen();
 	mvprintw(3,0,"\tUP--Up Arrow\tDown--Down Arrow\tLeft--Left Arrow\tRight--Right Arrow\t\t\t\tPen Up--Page Up\t\tPen Down--Page Down");
 	refresh();
-	getch();
+	keypad(stdscr,TRUE);
+	int choice = 0;
 	while(1)
 	{
+	int c = getch();
+		switch(c)
+		{
+			case KEY_UP:
+				if(DEBUG)
+				mvprintw(20,3,"Up arrrow pressed!");
+				movex(50);
+				break;
+			case KEY_DOWN:
+				if(DEBUG)
+				mvprintw(20,3,"Down arrrow pressed!");
+				movex(-50);
+				break;
+			case 'q':
+			case 'Q':
+				if(DEBUG)
+				mvprintw(20,3,"Quit has been pressed!");
+				choice = 1;
+				break;
+			case KEY_LEFT:
+				if(DEBUG)
+				mvprintw(20,3,"Left arrrow pressed!");
+				movey(-50);
+				break;
+			case KEY_RIGHT:
+				if(DEBUG)
+				mvprintw(20,3,"Right arrrow pressed!");
+				movey(50);
+				break;
+			case KEY_NPAGE:
+				if(DEBUG)
+				mvprintw(20,3,"Page Up arrrow pressed!");
+				pen(1);
+				break;
+			case KEY_PPAGE:
+				if(DEBUG)
+				mvprintw(20,3,"Page down arrrow pressed!");
+				pen(-1);
+				break;
+			default:
+				mvprintw(24, 3, "Charcter pressed is = %3d Hopefully it can be printed as '%c'", c, c);
+				refresh();
+				break;
+		}
+		refresh();
+		if(choice != 0)	/* User did a choice come out of the infinite loop */
+			break;
 	}
 	return 0;
 }
