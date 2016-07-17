@@ -151,33 +151,13 @@ void pen(int steps)
 		return;
 	if(pulse == -1)
 	{
-		system("echo . > test.txt");
+//		system("~/servoBlaster/servod");
 	}
-	oldPulse = pulse;
-	pulse = steps;
-noecho();
-	char str1 [70] = "echo 2=";
+	noecho();
 	char str2 [7];
-	char str3 [30] = " > /dev/servoblaster";
-	char str4 [100];
-	char str5 [7];
-	//sprintf(str4,"echo 2=%i >> test.txt ",pulse);
-	sprintf(str4,"echo 2=%i > /dev/servoblaster",pulse);
-	//mvprintw(4,10,"Value interpreted as:%s",str2);
-	//strcpy(str5,str2);
-//	refresh();
-	//strcat(str4,str1);
-//	printw("\n%s\n",str4);
-
-	//strcat(str4,str5);
-//	printw("\n%s\n",str4);
-//	strcat(str4,str3);
-	//move(3,0);
-	//clrtoeol();
-	//mvprintw(3,15,"\n%s\n",str4);
-	////move(14,0);
-//	refresh();
-	system(str4);
+	char output [100];
+	sprintf(output,"echo 2=%i > /dev/servoblaster",pulse);
+	system(output);
 }
 int servoControl()
 {
@@ -225,6 +205,7 @@ int servoControl()
 					break;
 				case KEY_BACKSPACE:
 					mvprintw(20,3,"BackSpace pressed!");
+					clrtoeol();
 					choice = 2;
 					break;
 				default:
