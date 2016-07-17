@@ -52,26 +52,30 @@ int main()
 	noecho();
 	cbreak();
 	start_color();
-	clearScreen();
-	char  *choices[][2] = { 
-			{"Plot File","You select a file to plot and will plot the file on the plotter"},
-			{"Manual Control","Will give you full control over the plotter for debuging or demenstration"},
-			{"Servo Control","Lets you enter and test different duration of pulses sent to the servo for fine tuning and debugging"},
-			{"Exit","Will exit the prgram"},
-			};
-/* Line buffering disabled. pass on everything */
-	int n_choices = sizeof(choices) / (2*sizeof(char *));
-	//mvprintw(3,4,"the vale of sizeof(choices):%d\nvale of sieof(char *):%d\nsize of sizeof(*choices):%d\nsize of n_choices:%d",sizeof(choices),sizeof(char *),sizeof(*choices),n_choices);
-//	printw("\nthe first two strings are :%s \n and %s",choices[0][0],choices[0][1]);
-	int result = menus(choices,n_choices);
-	clearScreen();
-	if(result == 3)
-		servoControl();
-	if(result == 2)
-	{
-		manualControl();	
+	while(1)
+		{
+		clearScreen();
+		char  *choices[][2] = { 
+				{"Plot File","You select a file to plot and will plot the file on the plotter"},
+				{"Manual Control","Will give you full control over the plotter for debuging or demenstration"},
+				{"Servo Control","Lets you enter and test different duration of pulses sent to the servo for fine tuning and debugging"},
+				{"Exit","Will exit the prgram"},
+				};
+	/* Line buffering disabled. pass on everything */
+		int n_choices = sizeof(choices) / (2*sizeof(char *));
+		//mvprintw(3,4,"the vale of sizeof(choices):%d\nvale of sieof(char *):%d\nsize of sizeof(*choices):%d\nsize of n_choices:%d",sizeof(choices),sizeof(char *),sizeof(*choices),n_choices);
+	//	printw("\nthe first two strings are :%s \n and %s",choices[0][0],choices[0][1]);
+		int result = menus(choices,n_choices);
+		clearScreen();
+		if(result == 3)
+			servoControl();
+		if(result == 2)
+		{
+			manualControl();	
+		}
+		if(result == 4)
+		break;
 	}
-	
 	endwin();
 	return 0;
 }
@@ -142,11 +146,6 @@ void movey(int duration)
 }
 void pen(int steps)
 {
-	count ++;
-	if(count != 5&&steps==oldPulse)
-		return;
-	if(count ==5)
-		count = 0;
 		
 	if(steps == pulse)
 		return;
@@ -201,7 +200,6 @@ int servoControl()
 		mvprintw(14,12,"Value entered: %i",value);
 		while(choice == 0)
 		{
-		delay(20);
 			keypad(stdscr,TRUE);
 			nodelay(stdscr,1);
 		//	noecho();
@@ -222,10 +220,8 @@ int servoControl()
 					break;
 				case KEY_RIGHT:
 					mvprintw(20,3,"Right arrrow pressed!");
-				//	pen(450);
-				if(pulse == STOPPULSE)
-					delay(200);
 					pen(value);
+					delay(30);
 					break;
 				case KEY_BACKSPACE:
 					mvprintw(20,3,"BackSpace pressed!");
@@ -243,6 +239,7 @@ int servoControl()
 		if(choice == 1)
 			break;
 	}
+	pen(150);
 	return 0;
 }
 
@@ -255,7 +252,16 @@ int manualControl()
 	int choice = 0;
 	while(1)
 	{
-	int c = getch();
+		nodelay(stdscr,1);
+		//	noecho();
+			int c = getch();
+			while( c == ERR)
+			{
+
+				pen(STOPPULSE);
+				delay(15);
+				c = getch();
+			}
 		switch(c)
 		{
 			case KEY_UP:
@@ -287,12 +293,14 @@ int manualControl()
 			case KEY_NPAGE:
 				if(DEBUG)
 				mvprintw(20,3,"Page Up arrrow pressed!");
-				pen(1);
+				pen(250);
+				delay(30);
 				break;
 			case KEY_PPAGE:
 				if(DEBUG)
 				mvprintw(20,3,"Page down arrrow pressed!");
-				pen(-1);
+				pen(50);
+				delay(30);
 				break;
 			default:
 				mvprintw(24, 3, "Charcter pressed is = %3d Hopefully it can be printed as '%c'", c, c);
@@ -302,7 +310,10 @@ int manualControl()
 		refresh();
 		if(choice != 0)	/* User did a choice come out of the infinite loop */
 			break;
+
 	}
+
+	pen(150);
 	return 0;
 }
 
