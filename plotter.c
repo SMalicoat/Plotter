@@ -4,7 +4,6 @@
 #include <wiringPi.h>
 #include <string.h>
 #include <stdlib.h>
-#include <softServo.h>
 
 #define WIDTH 30
 #define HEIGHT 10 
@@ -34,8 +33,9 @@
  printf(CYN "cyan\n" RESET);
  printf(WHT "white\n" RESET);
 */
-
+int count = 0;
 int pulse = -1;
+int oldPulse = -1;
 bool quit = false;
 void clearScreen();
 void print_menu(WINDOW *menu_win, int highlight,char * choices[][2], int n_choices,int startx,int starty,WINDOW * descript_win);
@@ -142,15 +142,43 @@ void movey(int duration)
 }
 void pen(int steps)
 {
-	if(pulse == -1)
-		softServoSetup(SERVOPIN);
-	if(steps == 0&&pulse!=STOPPULSE)
-		pulse = STOPPULSE;
-	else if(steps == pulse)
+	count ++;
+	if(count != 5&&steps==oldPulse)
 		return;
-
-	softServoWrite(SERVOPIN,steps);
+	if(count ==5)
+		count = 0;
+		
+	if(steps == pulse)
+		return;
+	if(pulse == -1)
+	{
+		system("echo . > test.txt");
+	}
+	oldPulse = pulse;
 	pulse = steps;
+noecho();
+	char str1 [70] = "echo 2=";
+	char str2 [7];
+	char str3 [30] = " > /dev/servoblaster";
+	char str4 [100];
+	char str5 [7];
+	//sprintf(str4,"echo 2=%i >> test.txt ",pulse);
+	sprintf(str4,"echo 2=%i > /dev/servoblaster",pulse);
+	//mvprintw(4,10,"Value interpreted as:%s",str2);
+	//strcpy(str5,str2);
+//	refresh();
+	//strcat(str4,str1);
+//	printw("\n%s\n",str4);
+
+	//strcat(str4,str5);
+//	printw("\n%s\n",str4);
+//	strcat(str4,str3);
+	//move(3,0);
+	//clrtoeol();
+	//mvprintw(3,15,"\n%s\n",str4);
+	////move(14,0);
+//	refresh();
+	system(str4);
 }
 int servoControl()
 {
@@ -173,6 +201,7 @@ int servoControl()
 		mvprintw(14,12,"Value entered: %i",value);
 		while(choice == 0)
 		{
+		delay(20);
 			keypad(stdscr,TRUE);
 			nodelay(stdscr,1);
 		//	noecho();
@@ -180,7 +209,7 @@ int servoControl()
 			while( c == ERR)
 			{
 
-				pen(0);
+				pen(STOPPULSE);
 				delay(15);
 				c = getch();
 			}
@@ -193,6 +222,9 @@ int servoControl()
 					break;
 				case KEY_RIGHT:
 					mvprintw(20,3,"Right arrrow pressed!");
+				//	pen(450);
+				if(pulse == STOPPULSE)
+					delay(200);
 					pen(value);
 					break;
 				case KEY_BACKSPACE:
