@@ -98,61 +98,158 @@ int main()
 	return 0;
 }
 void getMaxsizeofDIR(int *files,int *length)
+
 {
+//printw("\n\nmade it to the beging of get max size of dir\n");
+//getch();
 	DIR *dp;
 	struct dirent *ep;
 	*files = 0;
 	*length = 0;
-	dp = opendir ("./");
+//	printw("\njust about to opened the dir just now\n");
+//	getch();
+
+	dp = opendir (".");
+//	printw("\nopened the dir just now\n");
+//	getch();
 	if(dp != NULL)
 	{
+//	printw("\ndp exists in the if statment!\n");
+//	getch();
+
 	while (ep = readdir (dp))
-			if(ep->d_name[0]!='.'&&ep->d_name[1]!='.')
+	{
+		
+//	printw("\nthe value of d_name is:%s",ep->d_name); getch();
+			if(ep->d_name[0]!='.'||ep->d_name[1]=='.')
 			{
-				*files++;
+				++*files;
 				int size = strlen(ep->d_name);
 				*length = (*length > size)?*length:size;
 			}
+//			printw("   good!\n");
+//			getch();
+	}
 		(void) closedir(dp);
+//		printw("\ncan we close the dir? that is a yes\n\n and the size of files :%d \t and the size of letters is:%d",*files,*length);
+//		getch();
 	}
 	else 
 		perror("Could't open the directory");
+//printw("\nmade it through this!!\n");
+//getch();
 }
-FILE * chooseFile()
+FILE * chooseFile(char* dir)
 {
 	int files, length;
 	getMaxsizeofDIR(&files,&length);
+	bool *isDIR = (bool *) malloc(files*sizeof(bool*));
 	char **choices = (char**)malloc(files*sizeof(char*));
 	int i;
 	for(i = 0; i < files; i++)
 	{
 		choices[i] = (char *)malloc(length*sizeof(char));
+
 	}
+//	printw("just created choices in choosefile\n");
+//	getch();
 	DIR *dp;
 	struct dirent *ep;
-	dp = opendir ("./");
+	dp = opendir (dir);
+
+//	printw("jst opened dp in choosefile\n");
+//	getch();
 	if(dp != NULL)
 	{
+//	printw("dp is not null!!!\n");
+//	getch();
+
+
 		i = 0;
-		while (ep = readdir (dp))
-			if(ep->d_name[0]!='.'&&ep->d_name[1]!='.')
+		while(1)
+		{
+			//	printw("\nabout to checck the dir again");
+			//	getch();
+
+			if ((ep = readdir (dp))!=NULL)
 			{
+			//	printw("\tgood!!\n");
+			////	getch();
+	
+//			printw("\nand the name of value is:%s\n",ep->d_name);
+//			getch();
+				if(ep->d_name[0]!='.'||ep->d_name[1]=='.')
+				{
+				isDIR[i] = ep->d_type==DT_DIR;
+			//	printw("number of files is:%d \t and size of length is:%d\t and size of i is:%d",files,length,i);
+			//	printw("\nand the name of value is:%s",ep->d_name);
+			//	getch();
+
 				strcpy(choices[i],ep->d_name);
 				i++;
+			//	printw("\tgood!!\n",ep->d_name);
+			//	getch();
+				}
 			}
-		int result = menus(choices,NULL,files);
-		(void) closedir(dp);
-		refresh();
+			else
+			{
+
+			//	printw("\nokay we are done abotu to close!!\n");
+			//	getch();
+				(void) closedir(dp);
+			//	printw("\nwe closed!!\n");
+			//	getch();
+				break;
+			}
+		}
+	//printw("\n right about to call menus\n");
+	//getch();
+	int result = menus(choices,NULL,files);
+	printw("\nmade it out of menus!");
+	getch();
+	char * fileName;
+	fileName =(char*) malloc(length*sizeof(char));
+	printw("\n about to copy the string over! to fileName");
+	getch();
+	strcpy(fileName,choices[result-1]);
+	printw("\ncopied over choices here is fileName:%s",fileName);
+	getch();
+	for(i = 0; i < files; i++)
+	{
+		free(choices[i]);
 	}
-	else 
+	printw("\njust freed choices[i]! about to free choices");
+	getch();
+	free(choices);
+	printw("\njust freed choicesi");
+	getch();
+	if(isDIR[result-1])
+	{
+		printw("is a direactory and goign to open:%s\n",fileName);
+		getch();
+		free(isDIR);
+		chdir(fileName);
+		return chooseFile("./");
+	}
+		free(isDIR);
+		return fopen("makefile","r"); 
+	}
+	else
+	{
+		printw("\ngot an error could not open the directory!\n");
+		getch();
 		perror("Could't open the directory");
+	}
 		return fopen("makefile","r"); 
 
 }
 int plot()
 {
-	
-	FILE * fp = chooseFile();
+	printw("\nmake it here to line 154! beging of plot\n");
+	getch();
+	FILE * fp = chooseFile("./");
+	printw("made it to after chooseFile()\n");
+	getch();
 	char * line = NULL;
 	size_t len = 0;
 	ssize_t read;
@@ -456,12 +553,14 @@ void print_menu(WINDOW *menu_win, int highlight,char * choices[],char *descripti
 			mvwprintw(menu_win, y, x, "%s", choices[i]);
 		++y;
 	
-	}
+	}  
+//	mvprintw(2,0,"We are at the suspcected area at 496\n");
+//	getch();
 	if(description!=NULL)
 	{
 	 descript_win = newwin(HEIGHT, WIDTH+4, starty, startx+WIDTH+2);
 	mvwprintw(descript_win, 2,2,"%s",description[highlight -1]);
-}
-	wrefresh(menu_win);
 	wrefresh(descript_win);
+	}
+	wrefresh(menu_win);
 }
