@@ -4,6 +4,11 @@
 #include <wiringPi.h>
 #include <string.h>
 #include <stdlib.h>
+#include <dirent.h>
+#include <stdio.h>
+#include <sys/types.h>
+
+
 
 #define WIDTH 30
 #define HEIGHT 10 
@@ -38,13 +43,16 @@ int pulse = -1;
 int oldPulse = -1;
 bool quit = false;
 void clearScreen();
-void print_menu(WINDOW *menu_win, int highlight,char * choices[][2], int n_choices,int startx,int starty,WINDOW * descript_win);
-int menus(char * choices[][2],int n_choices);
+void print_menu(WINDOW *menu_win, int highlight,char * choices[],char * description[], int n_choices,int startx,int starty,WINDOW * descript_win);
+int menus(char * choices[], char * description[],int n_choices);
 int manualControl();
 void movex(int duration);
 void movey(int duration);
 void pen(int steps);
 int servoControl();
+int plot();
+FILE * chooseFile();
+void getMaxsizeofDIR(int *files,int *length);
 int main()
 {
 	wiringPiSetup();
@@ -55,64 +63,119 @@ int main()
 	while(1)
 		{
 		clearScreen();
-		char  *choices[][2] = { 
-				{"Plot File","You select a file to plot and will plot the file on the plotter"},
-				{"Manual Control","Will give you full control over the plotter for debuging or demenstration"},
-				{"Servo Control","Lets you enter and test different duration of pulses sent to the servo for fine tuning and debugging"},
-				{"Exit","Will exit the prgram"},
-				};
-	/* Line buffering disabled. pass on everything */
-		int n_choices = sizeof(choices) / (2*sizeof(char *));
-		//mvprintw(3,4,"the vale of sizeof(choices):%d\nvale of sieof(char *):%d\nsize of sizeof(*choices):%d\nsize of n_choices:%d",sizeof(choices),sizeof(char *),sizeof(*choices),n_choices);
-	//	printw("\nthe first two strings are :%s \n and %s",choices[0][0],choices[0][1]);
-		int result = menus(choices,n_choices);
+		char * choices[] = {"Plot File","Manual Control","Servo Control","Exit"};
+		char *description[] = {
+		"You select a file to plot and will plot the file on the plotter",
+		"Will give you full control over the plotter for debuging or demenstration",
+		"Lets you enter and test different duration of pulses sent to the servo for fine tuning and debugging",
+		"Will exit the prgram"};
+		int result = menus(choices,description,4);
 		clearScreen();
-		if(result == 3)
-			servoControl();
-		if(result == 2)
+		switch (result)
 		{
-			manualControl();	
+			case 1:
+			/*	FILE * fp;
+				char * line = NULL; 
+				size_t len = 0;
+				ssize_t read;
+				fp = fopen ("sampleGcode.txt","r");*/
+				plot();
+
+				break;
+			case 2:
+				manualControl();
+				break;
+			case 3:
+				servoControl:
+				break;
+			case 4:
+				quit = true;
+				break;
+
 		}
-		if(result == 4)
-		break;
 	}
 	endwin();
 	return 0;
 }
-/*	FILE * fp;
-	char * line = NULL;
-	size_t len = 0;
-	ssize_t read;
-	fp = fopen ("sampleGcode.txt","r");
-	if(fp == NULL)
+void getMaxsizeofDIR(int *files,int *length)
+{
+	DIR *dp;
+	struct dirent *ep;
+	*files = 0;
+	*length = 0;
+	dp = opendir ("./");
+	if(dp != NULL)
 	{
-		perror("open failed");
-		return 2;
+	while (ep = readdir (dp))
+			if(ep->d_name[0]!='.'&&ep->d_name[1]!='.')
+			{
+				*files++;
+				int size = strlen(ep->d_name);
+				*length = (*length > size)?*length:size;
+			}
+		(void) closedir(dp);
 	}
-	while((read = getline(&line, &len, fp)) != -1)
+	else 
+		perror("Could't open the directory");
+}
+FILE * chooseFile()
+{
+	int files, length;
+	getMaxsizeofDIR(&files,&length);
+	char **choices = (char**)malloc(files*sizeof(char*));
+	int i;
+	for(i = 0; i < files; i++)
 	{
-		printw("%s",line);
-		refresh();
+		choices[i] = (char *)malloc(length*sizeof(char));
 	}
-
-	fclose(fp);*/
-//	if(line)
-//		free(line);
-
-/*	DIR *dp;
+	DIR *dp;
 	struct dirent *ep;
 	dp = opendir ("./");
 	if(dp != NULL)
 	{
+		i = 0;
 		while (ep = readdir (dp))
-			if(ep->d_name[0]!='.')
-				printw("%s  ",ep->d_name);
+			if(ep->d_name[0]!='.'&&ep->d_name[1]!='.')
+			{
+				strcpy(choices[i],ep->d_name);
+				i++;
+			}
+		int result = menus(choices,NULL,files);
 		(void) closedir(dp);
 		refresh();
 	}
 	else 
 		perror("Could't open the directory");
-*/
+		return fopen("makefile","r"); 
+
+}
+int plot()
+{
+	
+	FILE * fp = chooseFile();
+	char * line = NULL;
+	size_t len = 0;
+	ssize_t read;
+	if(fp == NULL)
+	{
+		perror("open failed");
+		return 2;
+	}
+	fclose(fp);
+	while(1)
+	{
+		read = getline(&line, &len, fp);
+		if(read == -1)
+			break;
+	}
+
+
+	if(line)
+	free(line);
+	return 0;
+}
+
+	
 //switch(option)
 //	{
 //		case PLOTDISPLAY:
@@ -304,7 +367,8 @@ void clearScreen()
 	init_pair(1,COLOR_BLACK,COLOR_WHITE);
         attron(COLOR_PAIR(1));
         move(0,0);
-        for(int i = 0; i < COLS;i++)
+	int i;
+        for(i = 0; i < COLS;i++)
                 printw(" ");
         mvprintw(0,COLS/2 - 5,"CNC PLOTTER");
         attroff(COLOR_PAIR(1));
@@ -312,8 +376,9 @@ void clearScreen()
 
 
 }
-int menus(char* choices[][2],int n_choices)
+int menus(char * choices[], char * description[],int n_choices)
 	{
+	clearScreen();
 	WINDOW *menu_win;
 	WINDOW *descript_win;
 	int highlight = 1;
@@ -329,7 +394,7 @@ int menus(char* choices[][2],int n_choices)
 	//mvprintw(4, 0, "Use arrow keys to go up and down, Press enter to select a choice");
 	refresh();
 	
-	print_menu(menu_win, highlight,choices,n_choices,startx,starty,descript_win);
+	print_menu(menu_win, highlight,choices,description,n_choices,startx,starty,descript_win);
 	while(1)
 	{
 	c = wgetch(menu_win);
@@ -355,7 +420,7 @@ int menus(char* choices[][2],int n_choices)
 				refresh();
 				break;
 		}
-		print_menu(menu_win, highlight,choices,n_choices,startx,starty,descript_win);
+		print_menu(menu_win, highlight,choices,description,n_choices,startx,starty,descript_win);
 		if(choice != 0)	/* User did a choice come out of the infinite loop */
 			break;
 	}	
@@ -366,13 +431,14 @@ int menus(char* choices[][2],int n_choices)
 	//werase(descript_win);
 	clear();
 	refresh();
+	clearScreen();
 	//delwin(menu_win);
 	//delwin(descript_win);
 	return choice;
 }
 
 
-void print_menu(WINDOW *menu_win, int highlight,char * choices[][2],int n_choices,int startx,int starty,WINDOW * descript_win)
+void print_menu(WINDOW *menu_win, int highlight,char * choices[],char *description[],int n_choices,int startx,int starty,WINDOW * descript_win)
 {
 	int x, y, i;	
 
@@ -383,15 +449,19 @@ void print_menu(WINDOW *menu_win, int highlight,char * choices[][2],int n_choice
 		if(highlight == i + 1) /* High light the present choice */
 		{
 			wattron(menu_win, A_REVERSE); 
-			mvwprintw(menu_win, y, x, "%s", choices[i][0]);
+			mvwprintw(menu_win, y, x, "%s", choices[i]);
 			wattroff(menu_win, A_REVERSE);
 		}
 		else
-			mvwprintw(menu_win, y, x, "%s", choices[i][0]);
+			mvwprintw(menu_win, y, x, "%s", choices[i]);
 		++y;
+	
 	}
+	if(description!=NULL)
+	{
 	 descript_win = newwin(HEIGHT, WIDTH+4, starty, startx+WIDTH+2);
-	mvwprintw(descript_win, 2,2,"%s",choices[highlight -1][1]);
+	mvwprintw(descript_win, 2,2,"%s",description[highlight -1]);
+}
 	wrefresh(menu_win);
 	wrefresh(descript_win);
 }
