@@ -205,30 +205,31 @@ FILE * chooseFile(char* dir)
 	//printw("\n right about to call menus\n");
 	//getch();
 	int result = menus(choices,NULL,files);
-	printw("\nmade it out of menus!");
-	getch();
+//	printw("\nmade it out of menus!");
+//	getch();
 	char * fileName;
-	fileName =(char*) malloc(length*sizeof(char));
-	printw("\n about to copy the string over! to fileName");
-	getch();
-	strcpy(fileName,choices[result-1]);
-	printw("\ncopied over choices here is fileName:%s",fileName);
-	getch();
+	fileName =(char*) malloc((length+3)*sizeof(char));
+//	printw("\n about to copy the string over! to fileName");
+//	getch();
+	strcpy(fileName,"cd ");
+	strcat(fileName,choices[result-1]);
+//	printw("\ncopied over choices here is fileName:%s",fileName);
+//	getch();
 	for(i = 0; i < files; i++)
 	{
 		free(choices[i]);
 	}
-	printw("\njust freed choices[i]! about to free choices");
-	getch();
+//	printw("\njust freed choices[i]! about to free choices");
+//	getch();
 	free(choices);
-	printw("\njust freed choicesi");
-	getch();
+//	printw("\njust freed choicesi");
+//	getch();
 	if(isDIR[result-1])
 	{
-		printw("is a direactory and goign to open:%s\n",fileName);
-		getch();
+//		printw("is a direactory and goign to open:%s\n",fileName);
+//		getch();
 		free(isDIR);
-		chdir(fileName);
+		system(fileName);
 		return chooseFile("./");
 	}
 		free(isDIR);
