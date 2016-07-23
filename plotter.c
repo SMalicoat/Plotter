@@ -43,8 +43,8 @@ int pulse = -1;
 int oldPulse = -1;
 bool quit = false;
 void clearScreen();
-void print_menu(WINDOW *menu_win, int highlight,char * choices[],char * description[], int n_choices,int startx,int starty,int height,WINDOW * descript_win);
-int menus(char * choices[], char * description[],int n_choices);
+void print_menu(WINDOW *menu_win, int highlight,char * choices[],char * description[], int n_choices,int startx,int starty,int height,int wordwidth,WINDOW * descript_win);
+int menus(char* title,char * choices[], char * description[],int n_choices,int wordwidth);
 int manualControl();
 void movex(int duration);
 void movey(int duration);
@@ -69,7 +69,7 @@ int main()
 		"Will give you full control over the plotter for debuging or demenstration",
 		"Lets you enter and test different duration of pulses sent to the servo for fine tuning and debugging",
 		"Will exit the prgram"};
-		int result = menus(choices,description,4);
+		int result = menus("Hello and Welcome to my creation please sleect a mode", choices,description,4,20);
 		clearScreen();
 		switch (result)
 		{
@@ -89,6 +89,7 @@ int main()
 				servoControl:
 				break;
 			case 4:
+			case -1:
 				quit = true;
 				break;
 
@@ -141,8 +142,8 @@ void getMaxsizeofDIR(char * dir,int *files,int *length)
 }
 FILE * chooseFile(char* dir)
 {
-	printw("\n\ngoing to try and choosefile on file:%s",dir);
-	getch();
+//	printw("\n\ngoing to try and choosefile on file:%s",dir);
+//	getch();
 	int files, length;
 	getMaxsizeofDIR(dir,&files,&length);
 	bool *isDIR = (bool *) malloc(files*sizeof(bool*));
@@ -167,7 +168,7 @@ FILE * chooseFile(char* dir)
 //	getch();
 
 		isDIR[0] = true;
-		strcpy(choices[0],"..");
+		strcpy(choices[0],"\\..");
 		i = 1;
 		clearScreen();
 		while(1)
@@ -189,7 +190,13 @@ FILE * chooseFile(char* dir)
 				//printw("\nand the name of value is:%s",ep->d_name);
 				//getch();
 
-					strcpy(choices[i],ep->d_name);
+					if(isDIR[i])
+					{
+						strcpy(choices[i],"\\");
+						strcat(choices[i],ep->d_name);
+					}
+					else
+						strcpy(choices[i],ep->d_name);
 					i++;
 			//	printw("\tgood!!\n",ep->d_name);
 			//	getch();
@@ -209,9 +216,11 @@ FILE * chooseFile(char* dir)
 		}
 	//printw("\n right about to call menus\n");
 	//getch();
-	int result = menus(choices,NULL,files);
+	int result = menus("Select file to be plotted",choices,NULL,files,length+3);
 //	printw("\nmade it out of menus!");
 //	getch();
+	if(result==-1)
+		return NULL;
 	char  fileName[1024];
 //	printw("\n about to copy the string over! to fileName");
 //	getch();
@@ -246,19 +255,20 @@ FILE * chooseFile(char* dir)
 	
 	}
 	int loop;
-	char c;
+	char c = 'a';
+	strcat(fileName,"\0");
 	for(loop = 0;c !='\0';loop++)
 	{
+	//	printw("\nloop:%d\tc:%c",loop,fileName[loop]);
 		 c = fileName[loop];
 	}
-	printw("\nbefore we add /: %s",fileName);
-	getch();
-	if(fileName[loop]!='/')	
+//	printw("\nbefore we add /: %s\nfileName[loop]:%c",fileName,fileName[loop]);
+//	getch();
+	if(loop>2&&fileName[loop-2]!='/')	
 		strcat(fileName,"/");
 
-	printw("\nafter we add /: %s",fileName);
-	getch();
-	strcat(fileName,choices[result-1]);
+//	printw("\nafter we add /: %s",fileName);
+//	getch();
 	//printw("\ncopied over choices here is fileName:%s",fileName);
 	//getch();
 //	for(i = 0; i < files; i++)
@@ -277,11 +287,24 @@ FILE * chooseFile(char* dir)
 	{
 //		printw("is a direactory and goign to open:%s\n",fileName);
 //		getch();
+//		printw("the char at position 1 and 2 are:%c %c\n",fileName[0],fileName[1]);
+//		getch();
 		//if(isDIR!=NULL)
 		//	free(isDIR);
 	//	isDIR = NULL;
+	//	isDIR = NULL;
+	//j	char *target; 
+//		for (target = &fileName[0]; *target != '\0'; target++)
+//		    *target = *(target+1);
+//		*target = '\0';
+
+		strcat(fileName,&(choices[result-1][1]));
+
+//		printw("\n okay so that is a directory that name is:%s and what i want is:%s",fileName,&fileName[2]);
+//		getch();
 		return chooseFile(fileName);
 	}
+		strcat(fileName,choices[result-1]);
 	//	if(isDIR!=NULL)
 	//		free(isDIR);
 	//	isDIR=NULL;
@@ -303,6 +326,9 @@ int plot()
 	char dir[1024];
 	getcwd(dir,sizeof(dir));
 	FILE * fp = chooseFile(dir);
+	if(fp==NULL)
+		return 1;
+		
 	printw("made it to after chooseFile()\n");
 	getch();
 	char * line = NULL;
@@ -529,7 +555,7 @@ void clearScreen()
 
 
 }
-int menus(char * choices[], char * description[],int n_choices)
+int menus(char * title,char * choices[], char * description[],int n_choices,int wordwidth)
 	{
 	clearScreen();
 	WINDOW *menu_win;
@@ -538,16 +564,17 @@ int menus(char * choices[], char * description[],int n_choices)
 	int choice = 0;
 	int c;
 	int height = (n_choices + 4<HEIGHT)?HEIGHT:n_choices+4;
-	int startx = (80 - WIDTH) / 3;
+	int width = (wordwidth+4<WIDTH)?WIDTH:wordwidth;
+	int startx = (80 - width) / 3;
 	int starty = 4+(24 - height) / 3;
 
-	menu_win = newwin(height, WIDTH, starty, startx);
+	menu_win = newwin(height, width, starty, startx);
 	keypad(menu_win, TRUE);
-        mvprintw(2,2,"Hello and welcome to my creation. To start please select with the arrow keys");
+        mvprintw(2,2,"%s",title);
 	//mvprintw(4, 0, "Use arrow keys to go up and down, Press enter to select a choice");
 	refresh();
 	
-	print_menu(menu_win, highlight,choices,description,n_choices,startx,starty,height,descript_win);
+	print_menu(menu_win, highlight,choices,description,n_choices,startx,starty,height,width,descript_win);
 	while(1)
 	{
 	c = wgetch(menu_win);
@@ -568,12 +595,12 @@ int menus(char * choices[], char * description[],int n_choices)
 			case 10:
 				choice = highlight;
 				break;
+			case 'q':
+				return -1;
 			default:
-				mvprintw(24, 0, "Charcter pressed is = %3d Hopefully it can be printed as '%c'", c, c);
-				refresh();
 				break;
 		}
-		print_menu(menu_win, highlight,choices,description,n_choices,startx,starty,height,descript_win);
+		print_menu(menu_win, highlight,choices,description,n_choices,startx,starty,height,width,descript_win);
 		if(choice != 0)	/* User did a choice come out of the infinite loop */
 			break;
 	}	
@@ -591,22 +618,45 @@ int menus(char * choices[], char * description[],int n_choices)
 }
 
 
-void print_menu(WINDOW *menu_win, int highlight,char * choices[],char *description[],int n_choices,int startx,int starty,int height,WINDOW * descript_win)
+void print_menu(WINDOW *menu_win, int highlight,char * choices[],char *description[],int n_choices,int startx,int starty,int height,int width,WINDOW * descript_win)
 {
 	int x, y, i;	
-
+	init_pair(4, COLOR_RED, COLOR_BLACK);
+	curs_set(0);
+	init_pair(5, COLOR_RED, COLOR_WHITE);
 	x = 2;
 	y = 2;
 	for(i = 0; i < n_choices; ++i)
 	{
 		if(highlight == i + 1) /* High light the present choice */
 		{
+			if(choices[i][0]=='\\')
+			{
+				wattron(menu_win,COLOR_PAIR(5));
+				mvwprintw(menu_win, y, x, "%s", ++choices[i]);
+				wattroff(menu_win,COLOR_PAIR(5));	
+				choices[i]--;
+			}
+			else{
+
 			wattron(menu_win, A_REVERSE); 
 			mvwprintw(menu_win, y, x, "%s", choices[i]);
 			wattroff(menu_win, A_REVERSE);
+			}
 		}
 		else
+		{
+		
+			if(choices[i][0]=='\\')
+			{
+				wattron(menu_win,COLOR_PAIR(4));
+				mvwprintw(menu_win, y, x, "%s", ++choices[i]);
+				wattroff(menu_win,COLOR_PAIR(4));	
+				choices[i]--;
+			}
+			else
 			mvwprintw(menu_win, y, x, "%s", choices[i]);
+		}
 		++y;
 	
 	}  
@@ -614,7 +664,7 @@ void print_menu(WINDOW *menu_win, int highlight,char * choices[],char *descripti
 //	getch();
 	if(description!=NULL)
 	{
-	 descript_win = newwin(height, WIDTH+4, starty, startx+WIDTH+2);
+	 descript_win = newwin(height, width+4, starty, startx+width+2);
 	mvwprintw(descript_win, 2,2,"%s",description[highlight -1]);
 	wrefresh(descript_win);
 	}
