@@ -107,9 +107,9 @@ int optoControl()
 {
 	clearScreen();
 	bool isOn = true;
-	double ticks = 0;
+	double ticks = 0.0;
 	mvprintw(3,4,"Press Enter when ready to start recording the opto sensor, or q to exit!");
-	mvprintw(14,10,"Opto Sensor reading:%s\tTicks:%d",(isOn)?"Open!!":"Blocked!!!",ticks);
+	mvprintw(14,10,"Opto Sensor reading:%s\tTicks:%d",(!isOn)?"Open!!":"Blocked!!!",ticks);
 	char c = getch();
 	switch(c)
 	{
@@ -125,6 +125,7 @@ int optoControl()
 	}
 	keypad(stdscr,TRUE);
 	bool isback = false;
+	int count = 0;
 	while(1)
 	{
 		nodelay(stdscr,0);
@@ -137,15 +138,23 @@ int optoControl()
 		mvprintw(8,5,"Press arrow key to change direction right now we are counting ticks %s, \n\tRight arrow to count up and left arrow to count down",(isback)?"down":"up");
 		printw("\n Using pin by Wiring pi 15 witch is 4th pin on the right down. right next to the ground");
 		pinMode(15,INPUT);
+		move(14,0);
+		clrtoeol();
+		mvprintw(14,10,"\tTicks:%d",count);
+			
 		while( c == ERR)
 		{
 			if(digitalRead(15)!=isOn)	
 			{	
+//			count++;
 			isOn=digitalRead(15);
-			ticks+=(isback)?-1:1;
+			if(isback)
+				count--;	
+			else 
+				count++;
 			move(14,0);
 			clrtoeol();
-			mvprintw(14,10,"Opto Sensor reading:%s\tTicks:%d",(isOn)?"Open!!":"Blocked!!!",ticks);
+			mvprintw(14,10,"\tTicks:%d",count);
 			
 			}
 			refresh();
@@ -158,6 +167,9 @@ int optoControl()
 			case 'Q':
 				mvprintw(20,3,"Quit has been pressed!");
 				return 0;
+				break;
+			case 'r':
+				count = 0;
 				break;
 			case KEY_RIGHT:
 				mvprintw(20,3,"Right arrrow pressed!");
