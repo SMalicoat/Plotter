@@ -450,30 +450,56 @@ int xyControl()
 	define_key("\033Oo", 1020); // -
 	clearScreen();
 	echo();
+	curs_set(2);
 	int xdist = 0;
 	int ydist = 0;
 	while(1)
 	{
+		move(10,0);
+		clrtoeol();
+		move(14,0);
+		clrtoeol();
+		refresh();
 		mvprintw(10,5,"Curent Position: X:%d\tY:%d",posX,posY);
 		mvprintw(14,5,"Move:");
 		mvprintw(14,12,"X:%d",xdist);
 		mvprintw(14,22,"Y:%d",ydist);
 		move(14,14);
+		refresh();
 		char valueString [6];
 		char c = getch();
 		if(c=='q'||c=='Q')
 			return 0;
-		ungetch(c);
-		getnstr(valueString,6);
-		xdist = atoi(valueString);
+		if(c!='\n')
+		{
+			printw("     ");
+			refresh();
+			ungetch(c);
+			move(14,14);
+			getnstr(valueString,6);
+			xdist = atoi(valueString);
+		}
+		move(14,24);
 		c = getch();
 		if(c=='q'||c=='Q')
 			return 0;
-		ungetch(c);
-		getnstr(valueString,6);
-		ydist = atoi(valueString);
-		mvprintw(15,12,"MOVING X:%d,Y:%d",xdist,ydist);
+		if(c!='\n')
+		{
+			printw("     ");
+			refresh();
+			ungetch(c);
+			move(14,24);
+			getnstr(valueString,6);
+			ydist = atoi(valueString);
+		
+		}
+		move(15,4);
+		clrtoeol;
+		//getch();
+		mvprintw(15,5,"MOVING       X:%d,   Y:%d              ",xdist,ydist);
 		refresh();
+		posX +=xdist;
+		posY +=ydist;
 		movexy(xdist,ydist);
 	}
 
