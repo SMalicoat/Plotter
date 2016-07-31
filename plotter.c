@@ -42,18 +42,22 @@ int count = 0;
 int pulse = -1;
 int oldPulse = -1;
 bool quit = false;
+int posX = -1;
+int posY = -1;
 void clearScreen();
 void print_menu(WINDOW *menu_win, int highlight,char * choices[],char * description[], int n_choices,int startx,int starty,int height,int wordwidth,WINDOW * descript_win);
 int menus(char* title,char * choices[], char * description[],int n_choices,int wordwidth);
 int manualControl();
 void movex(int duration);
 void movey(int duration);
+void movexy(int xdist,int ydist);
 void pen(int steps);
 int servoControl();
 int plot();
 FILE * chooseFile();
 void getMaxsizeofDIR(char * dir,int *files,int *length);
 int optoRead();
+int xyControl();
 int main()
 {
 	wiringPiSetup();
@@ -64,14 +68,15 @@ int main()
 	while(!quit)
 		{
 		clearScreen();
-		char * choices[] = {"Plot File","Manual Control","Servo Control","Opto Sensor Control","Exit"};
+		char * choices[] = {"Plot File","Manual Control","Servo Control","Opto Sensor Control","X&Y Control","Exit"};
 		char *description[] = {
 		"You select a file to plot and will plot the file on the plotter",
 		"Will give you full control over the plotter for debuging or demenstration",
 		"Lets you enter and test different duration of pulses sent to the servo for fine tuning and debugging",
 		"Will read in the togleing of the opto sensor for debuging",
+		"Will let you have control how much to move in x and y by ticks more precisly",
 		"Will exit the prgram"};
-		int result = menus("Hello and Welcome to my creation please sleect a mode", choices,description,5,20);
+		int result = menus("Hello and Welcome to my creation please sleect a mode", choices,description,6,20);
 		clearScreen();
 		switch (result)
 		{
@@ -94,6 +99,9 @@ int main()
 				optoControl();
 				break;
 			case 5:
+				xyControl();
+				break;
+			case 6:
 			case -1:
 				quit = true;
 				break;
@@ -415,6 +423,61 @@ FILE * chooseFile(char* dir)
 		return fopen("makefile","r"); 
 
 }
+int xyControl()
+{
+	define_key("\033Op", 1000);
+	define_key("\033Oq", 1001);
+	define_key("\033Or", 1002);
+	define_key("\033Os", 1003);
+	define_key("\033Ot", 1004);
+	define_key("\033Ou", 1005);
+	define_key("\033Ov", 1006);
+	define_key("\033Ow", 1007);
+	define_key("\033Ox", 1008);
+	define_key("\033Oy", 1009);
+
+	// non-arrow keypad keys (for macros)
+	define_key("\033OM", 1010); // Enter
+	define_key("\033OP", 1011); // NumLock
+	define_key("\033OQ", 1012); // /
+	define_key("\033OR", 1013); // *
+	define_key("\033OS", 1014); // -
+	define_key("\033Oj", 1015); // *
+	define_key("\033Ok", 1016); // +
+	define_key("\033Ol", 1017); // +
+	define_key("\033Om", 1018); // .
+	define_key("\033On", 1019); // .
+	define_key("\033Oo", 1020); // -
+	clearScreen();
+	echo();
+	int xdist = 0;
+	int ydist = 0;
+	while(1)
+	{
+		mvprintw(10,5,"Curent Position: X:%d\tY:%d",posX,posY);
+		mvprintw(14,5,"Move:");
+		mvprintw(14,12,"X:%d",xdist);
+		mvprintw(14,22,"Y:%d",ydist);
+		move(14,14);
+		char valueString [6];
+		char c = getch();
+		if(c=='q'||c=='Q')
+			return 0;
+		ungetch(c);
+		getnstr(valueString,6);
+		xdist = atoi(valueString);
+		c = getch();
+		if(c=='q'||c=='Q')
+			return 0;
+		ungetch(c);
+		getnstr(valueString,6);
+		ydist = atoi(valueString);
+		mvprintw(15,12,"MOVING X:%d,Y:%d",xdist,ydist);
+		refresh();
+		movexy(xdist,ydist);
+	}
+
+}
 int plot()
 {
 	//printw("\nmake it here to line 154! beging of plot\n");
@@ -478,8 +541,13 @@ int plot()
 //	}
 void movex(int duration)
 {
+	movexy(duration,0);
 }
 void movey(int duration)
+{
+	movexy(0,duration);
+}
+void movexy(int xdist, int ydist)
 {
 }
 void pen(int steps)
