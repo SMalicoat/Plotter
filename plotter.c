@@ -114,10 +114,13 @@ int main()
 int optoControl()
 {
 	clearScreen();
-	bool isOn = true;
+	pinMode(15,INPUT);
+	pinMode(8,INPUT);
+	bool isOn1 = digitalRead(15);
+	bool isOn2 = digitalRead(8); 
 	double ticks = 0.0;
 	mvprintw(3,4,"Press Enter when ready to start recording the opto sensor, or q to exit!");
-	mvprintw(14,10,"Opto Sensor reading:%s\tTicks:%d",(!isOn)?"Open!!":"Blocked!!!",ticks);
+	mvprintw(14,10,"Opto Sensor reading:%s\tTicks:%d",(!isOn1)?"Open!!":"Blocked!!!",ticks);
 	char c = getch();
 	switch(c)
 	{
@@ -145,25 +148,37 @@ int optoControl()
 		int c = getch();
 		mvprintw(8,5,"Press arrow key to change direction right now we are counting ticks %s, \n\tRight arrow to count up and left arrow to count down",(isback)?"down":"up");
 		printw("\n Using pin by Wiring pi 15 witch is 4th pin on the right down. right next to the ground");
-		pinMode(15,INPUT);
 		move(14,0);
 		clrtoeol();
 		mvprintw(14,10,"\tTicks:%d",count);
 			
 		while( c == ERR)
 		{
-			if(digitalRead(15)!=isOn)	
+			if(digitalRead(15)!=isOn1)	
 			{	
-//			count++;
-			isOn=digitalRead(15);
-			if(isback)
-				count--;	
-			else 
-				count++;
-			move(14,0);
-			clrtoeol();
-			mvprintw(14,10,"\tTicks:%d",count);
+	//			count++;
+				isOn1=digitalRead(15);
+				if(isback)
+					count--;	
+				else 
+					count++;
+				move(14,0);
+				clrtoeol();
+				mvprintw(14,10,"\tTicks:%d",count);
 			
+			}
+			else if(digitalRead(8)!=isOn2)
+			{
+				isOn2=digitalRead(8);
+				if(isback)
+					count--;	
+				else 
+					count++;
+				move(14,0);
+				clrtoeol();
+				mvprintw(14,10,"\tTicks:%d",count);
+			
+
 			}
 			refresh();
 			delay(1);
