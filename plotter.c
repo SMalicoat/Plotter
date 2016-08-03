@@ -48,11 +48,11 @@ void movex(int duration);
 void movey(int duration);
 void movexy(int xdist,int ydist);
 void pen(int steps);
+void penMove(bool goUp);
 int servoControl();
 int plot();
 FILE * chooseFile();
 void getMaxsizeofDIR(char * dir,int *files,int *length);
-int optoRead();
 int xyControl();
 void initalize();
 int safeDelay(int duration);
@@ -139,7 +139,7 @@ int optoControl()
 	while(!quit)
 	{
 		nodelay(stdscr,0);
-				keypad(stdscr,TRUE);
+		keypad(stdscr,TRUE);
 		nodelay(stdscr,1);
 		noecho();
 		getch();
@@ -151,7 +151,7 @@ int optoControl()
 		clrtoeol();
 		mvprintw(14,10,"\tTicks:%d",count);
 			
-		while(!quit&& c == ERR)
+		while(!quit  && c == ERR)
 		{
 			if(digitalRead(optoSensorX1)!=isOn1)	
 			{	
@@ -206,6 +206,7 @@ int optoControl()
 				refresh();
 				break;
 		}
+		safeDelay(10);
 		refresh();
 	}
 	
@@ -581,23 +582,34 @@ int plot()
 //	}
 int safeDelay(int duration)
 {
+	mvprintw(1,0,"SAFE DELAY!!");
+	refresh();
 	nodelay(stdscr,1);
 	clock_t before = clock();
-	int c = getch();
+	//int c = getch();
 	do
 	{
 		int newc = getch();
-		if(c==KEY_EXIT)
+		move(3,0);
+		clrtoeol();
+		mvprintw(3,0,"DID NOT READ ANTTHING WE GO-%i",newc);
+		refresh();
+		if(newc==27&&getch()==-1)
 		{
+			mvprintw(2,0,"GOT THAT YOU HIT QUIT!!!!");
+			nodelay(stdscr,0);
+			refresh();
+			getch();
 			allSTOP();
 			quit = true;
 			return 1;
 		}
+		
 //		ungetch(c);      //i dont think i need this line
 		delay(1);
 	}
 	while(((clock() - before )*1000/CLOCKS_PER_SEC)<duration);
-	ungetch(c);
+//	ungetch(c);
 	return 0;
 }
 void allSTOP()
@@ -671,8 +683,7 @@ void initalize()
 	if(digitalRead(Xstop))
 	{
 		digitalWrite(motorXA,HIGH);	
-		if(safeDelay(500))
-			return 1;
+		safeDelay(500);
 		digitalWrite(motorXA,LOW);
 	}
 	digitalWrite(motorXB,HIGH);
@@ -683,7 +694,7 @@ void initalize()
 	if(digitalRead(Ystop))
 	{
 		digitalWrite(motorYA,HIGH);	
-		if(safeDelay(500);
+		safeDelay(500);
 		digitalWrite(motorYA,LOW);
 	}
 	digitalWrite(motorYB,HIGH);
@@ -705,7 +716,7 @@ void initalize()
 			continue;
 		timing[posX][0] = (long) clock();	
 		posX++;
-		if(safeDelay(1);
+		safeDelay(1);
 	}
 	digitalWrite(motorXA,LOW);
 	digitalWrite(motorXB,HIGH);
@@ -719,7 +730,7 @@ void initalize()
 			continue;
 		timing[posX][1] = (long) clock();	
 		posX--;
-		if(safeDelay(1);
+		safeDelay(1);
 	}
 	digitalWrite(motorXB,LOW);
 	before = clock();
@@ -736,7 +747,7 @@ void initalize()
 			continue;
 		timing[posY][3] = (long) clock();	
 		posY++;
-		if(safeDelay(1);
+		safeDelay(1);
 	}
 	digitalWrite(motorYA,LOW);
 	digitalWrite(motorYB,HIGH);
@@ -750,7 +761,7 @@ void initalize()
 			continue;
 		timing[posY][4] = (long) clock();	
 		posY--;
-		if(safeDelay(1);
+		safeDelay(1);
 	}
 	digitalWrite(motorYB,LOW);
 
@@ -771,7 +782,7 @@ void penMove(bool goUp)
 		penUp = false;
 	}
 	system(output);
-	if(safeDelay(1000);
+	safeDelay(1000);
 	sprintf(output,"echo %i=%i > /dev/servoblaster",penServo,STOPPULSE);
 	system(output);
 }
