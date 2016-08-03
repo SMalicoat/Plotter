@@ -7,43 +7,39 @@
 #include <dirent.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include <time.h>
 
 
 
 #define WIDTH 30
 #define HEIGHT 10 
-#define TOPMENU 0
-#define FILESELECT 1
-#define PLOTDISPLAY 2
 
 #define DEBUG 0
 #define SERVOPIN 1
 #define STOPPULSE 150
+#define optoSensorX1 15
+#define optoSensorX2 8
+#define optoSensorY1 18
+#define optoSensorY2 18
+#define motorXA 16
+#define motorXB 16
+#define motorYA 15
+#define motorYB 15
+#define penServo 2    //must be acuroind to servoblaster wiring convention
+#define Xstop 18
+#define Ystop 18      //the pin that the touch sensor is located on tellign the y asix to stop at 0
 
+#define MAXSIZEX 120
+#define MAXSIZEY 120
 
-#define RED   "\x1B[31m"
-#define GRN   "\x1B[32m"
-#define YEL   "\x1B[33m"
-#define BLU   "\x1B[34m"
-#define MAG   "\x1B[35m"
-#define CYN   "\x1B[36m"
-#define WHT   "\x1B[37m"
-#define RESET "\x1B[0m"
-/*
- printf(RED "red\n" RESET);
- printf(GRN "green\n" RESET);
- printf(YEL "yellow\n" RESET);
- printf(BLU "blue\n" RESET);
- printf(MAG "magenta\n" RESET);
- printf(CYN "cyan\n" RESET);
- printf(WHT "white\n" RESET);
-*/
 int count = 0;
 int pulse = -1;
 int oldPulse = -1;
 bool quit = false;
 int posX = -1;
 int posY = -1;
+bool penUp = false;
+long timing[(MAXSIZEX>MAXSIZEY)?MAXSIZEX+2:MAXSIZEY+2][4];
 void clearScreen();
 void print_menu(WINDOW *menu_win, int highlight,char * choices[],char * description[], int n_choices,int startx,int starty,int height,int wordwidth,WINDOW * descript_win);
 int menus(char* title,char * choices[], char * description[],int n_choices,int wordwidth);
@@ -58,6 +54,9 @@ FILE * chooseFile();
 void getMaxsizeofDIR(char * dir,int *files,int *length);
 int optoRead();
 int xyControl();
+void initalize();
+int safeDelay(int duration);
+void allSTOP();
 int main()
 {
 	wiringPiSetup();
@@ -114,10 +113,10 @@ int main()
 int optoControl()
 {
 	clearScreen();
-	pinMode(15,INPUT);
-	pinMode(8,INPUT);
-	bool isOn1 = digitalRead(15);
-	bool isOn2 = digitalRead(8); 
+	pinMode(optoSensorX1,INPUT);
+	pinMode(optoSensorX2,INPUT);
+	bool isOn1 = digitalRead(optoSensorX1);
+	bool isOn2 = digitalRead(optoSensorX2); 
 	double ticks = 0.0;
 	mvprintw(3,4,"Press Enter when ready to start recording the opto sensor, or q to exit!");
 	mvprintw(14,10,"Opto Sensor reading:%s\tTicks:%d",(!isOn1)?"Open!!":"Blocked!!!",ticks);
@@ -137,7 +136,7 @@ int optoControl()
 	keypad(stdscr,TRUE);
 	bool isback = false;
 	int count = 0;
-	while(1)
+	while(!quit)
 	{
 		nodelay(stdscr,0);
 				keypad(stdscr,TRUE);
@@ -152,12 +151,12 @@ int optoControl()
 		clrtoeol();
 		mvprintw(14,10,"\tTicks:%d",count);
 			
-		while( c == ERR)
+		while(!quit&& c == ERR)
 		{
-			if(digitalRead(15)!=isOn1)	
+			if(digitalRead(optoSensorX1)!=isOn1)	
 			{	
 	//			count++;
-				isOn1=digitalRead(15);
+				isOn1=isOn1;
 				if(isback)
 					count--;	
 				else 
@@ -167,9 +166,9 @@ int optoControl()
 				mvprintw(14,10,"\tTicks:%d",count);
 			
 			}
-			else if(digitalRead(8)!=isOn2)
+			else if(digitalRead(optoSensorX2)!=isOn2)
 			{
-				isOn2=digitalRead(8);
+				isOn2=!isOn2;
 				if(isback)
 					count--;	
 				else 
@@ -181,7 +180,7 @@ int optoControl()
 
 			}
 			refresh();
-			delay(1);
+			safeDelay(1);
 			c = getch();
 		}
 		switch(c)
@@ -237,7 +236,7 @@ void getMaxsizeofDIR(char * dir,int *files,int *length)
 //	printw("\ndp exists in the if statment!\n");
 //	getch();
 
-	while (ep = readdir (dp))
+	while ((ep = readdir (dp))&&!quit)
 	{
 		
 //	printw("\nthe value of d_name is:%s",ep->d_name); getch();
@@ -290,7 +289,7 @@ FILE * chooseFile(char* dir)
 		strcpy(choices[0],"\\..");
 		i = 1;
 		clearScreen();
-		while(1)
+		while(!quit)
 		{
 			//	printw("\nabout to checck the dir again");
 			//	getch();
@@ -468,8 +467,8 @@ int xyControl()
 	curs_set(2);
 	int xdist = 0;
 	int ydist = 0;
-	while(1)
-	{
+	while(!quit)
+	{    //must be acuroind to servoblaster wiring convention
 		move(10,0);
 		clrtoeol();
 		move(14,0);
@@ -540,7 +539,7 @@ int plot()
 		return 2;
 	}
 	fclose(fp);
-	while(1)
+	while(!quit)
 	{
 		read = getline(&line, &len, fp);
 		if(read == -1)
@@ -580,6 +579,39 @@ int plot()
 
 //			//		break;
 //	}
+int safeDelay(int duration)
+{
+	nodelay(stdscr,1);
+	clock_t before = clock();
+	int c = getch();
+	do
+	{
+		int newc = getch();
+		if(c==KEY_EXIT)
+		{
+			allSTOP();
+			quit = true;
+			return 1;
+		}
+//		ungetch(c);      //i dont think i need this line
+		delay(1);
+	}
+	while(((clock() - before )*1000/CLOCKS_PER_SEC)<duration);
+	ungetch(c);
+	return 0;
+}
+void allSTOP()
+{
+	pinMode(motorXA,OUTPUT);
+	pinMode(motorXB,OUTPUT);
+	pinMode(motorYA,OUTPUT);
+	pinMode(motorYB,OUTPUT);
+	digitalWrite(motorXA,LOW);
+	digitalWrite(motorXB,LOW);
+	digitalWrite(motorYA,LOW);
+	digitalWrite(motorYB,LOW);
+	pen(STOPPULSE);	
+}
 void movex(int duration)
 {
 	movexy(duration,0);
@@ -590,6 +622,158 @@ void movey(int duration)
 }
 void movexy(int xdist, int ydist)
 {
+	if(posX==-1||posY==-1)
+		initalize();	
+}
+void initalize()
+{
+	pinMode(Xstop,INPUT);
+	pinMode(Ystop,INPUT);
+	pinMode(motorXA,OUTPUT);
+	pinMode(motorXB,OUTPUT);
+	pinMode(motorYA,OUTPUT);
+	pinMode(motorYB,OUTPUT);
+	pinMode(optoSensorX1,INPUT);
+	pinMode(optoSensorX2,INPUT);
+	pinMode(optoSensorY1,INPUT);
+	pinMode(optoSensorY2,INPUT);
+	digitalWrite(motorXA,LOW);
+	digitalWrite(motorXB,LOW);
+	digitalWrite(motorYA,LOW);
+	digitalWrite(motorYB,LOW);
+	clearScreen();
+	keypad(stdscr,TRUE);
+	while(!quit)
+	{
+		mvprintw(5,10,"Please use Page Up and Page Down Arrows to move the pen to just touching the page,When centered hit 'q'");
+		pen(STOPPULSE);
+		int c = getch();
+		switch(c)
+		{
+			case KEY_NPAGE:
+				pen(250);
+				safeDelay(30);
+				break;
+			case KEY_PPAGE:
+				pen(50);
+				safeDelay(30);
+				break;
+			case 'q':
+			case 'Q':
+				pen(50);
+				safeDelay(200);
+			defaut:
+				break;
+		}
+		
+	}
+	penMove(1);
+	if(digitalRead(Xstop))
+	{
+		digitalWrite(motorXA,HIGH);	
+		if(safeDelay(500))
+			return 1;
+		digitalWrite(motorXA,LOW);
+	}
+	digitalWrite(motorXB,HIGH);
+	while(!quit&&!digitalRead(Xstop))
+		safeDelay(1);
+	posX=0;
+	digitalWrite(motorXB,LOW);
+	if(digitalRead(Ystop))
+	{
+		digitalWrite(motorYA,HIGH);	
+		if(safeDelay(500);
+		digitalWrite(motorYA,LOW);
+	}
+	digitalWrite(motorYB,HIGH);
+	while(!quit&&!digitalRead(Ystop))
+		safeDelay(1);
+	posY=0;
+	digitalWrite(motorYB,LOW);
+	clock_t before = clock();
+	bool OptoX1 = digitalRead(optoSensorX1);		
+	bool OptoX2 = digitalRead(optoSensorX2);
+	digitalWrite(motorXA,HIGH);
+	while(!quit&&posX<=MAXSIZEX)
+	{
+		if(OptoX1!=digitalRead(optoSensorX1))
+			OptoX1 = !OptoX1;
+		else if(OptoX2!=digitalRead(optoSensorX2))
+			OptoX2 = !OptoX2;
+		else	
+			continue;
+		timing[posX][0] = (long) clock();	
+		posX++;
+		if(safeDelay(1);
+	}
+	digitalWrite(motorXA,LOW);
+	digitalWrite(motorXB,HIGH);
+	while(!quit&&posX>=0)
+	{
+		if(OptoX1!=digitalRead(optoSensorX1))
+			OptoX1 = !OptoX1;
+		else if(OptoX2!=digitalRead(optoSensorX2))
+			OptoX2 = !OptoX2;
+		else	
+			continue;
+		timing[posX][1] = (long) clock();	
+		posX--;
+		if(safeDelay(1);
+	}
+	digitalWrite(motorXB,LOW);
+	before = clock();
+	bool OptoY1 = digitalRead(optoSensorY1);		
+	bool OptoY2 = digitalRead(optoSensorY2);
+	digitalWrite(motorYA,HIGH);
+	while(!quit&&posX<=MAXSIZEX)
+	{
+		if(OptoX1!=digitalRead(optoSensorY1))
+			OptoY1 = !OptoY1;
+		else if(OptoY2!=digitalRead(optoSensorY2))
+			OptoY2 = !OptoY2;
+		else	
+			continue;
+		timing[posY][3] = (long) clock();	
+		posY++;
+		if(safeDelay(1);
+	}
+	digitalWrite(motorYA,LOW);
+	digitalWrite(motorYB,HIGH);
+	while(!quit&&posY>=0)
+	{
+		if(OptoY1!=digitalRead(optoSensorY1))
+			OptoY1 = !OptoY1;
+		else if(OptoY2!=digitalRead(optoSensorY2))
+			OptoY2 = !OptoY2;
+		else	
+			continue;
+		timing[posY][4] = (long) clock();	
+		posY--;
+		if(safeDelay(1);
+	}
+	digitalWrite(motorYB,LOW);
+
+
+
+}
+void penMove(bool goUp)
+{
+	char output[100];
+	if(goUp)
+	{
+		sprintf(output,"echo %i=%i > /dev/servoblaster",penServo,250);
+		penUp = true;
+	}
+	else
+	{
+		sprintf(output,"echo %i=%i > /dev/servoblaster",penServo,50);
+		penUp = false;
+	}
+	system(output);
+	if(safeDelay(1000);
+	sprintf(output,"echo %i=%i > /dev/servoblaster",penServo,STOPPULSE);
+	system(output);
 }
 void pen(int steps)
 {
@@ -603,7 +787,7 @@ void pen(int steps)
 	noecho();
 	char str2 [7];
 	char output [100];
-	sprintf(output,"echo 2=%i > /dev/servoblaster",pulse);
+	sprintf(output,"echo %i=%i > /dev/servoblaster",penServo,pulse);
 	system(output);
 }
 int servoControl()
@@ -613,7 +797,7 @@ int servoControl()
 	refresh();
 	keypad(stdscr,TRUE);
 	int choice = 0;
-	while(1)
+	while(!quit)
 	{
 		echo();
 		nodelay(stdscr,0);
@@ -625,17 +809,17 @@ int servoControl()
 		int value = atoi(valueString);
 		choice = 0;
 		mvprintw(14,12,"Value entered: %i",value);
-		while(choice == 0)
+		while(!quit&&choice == 0)
 		{
 			keypad(stdscr,TRUE);
 			nodelay(stdscr,1);
 		//	noecho();
 			int c = getch();
-			while( c == ERR)
+			while(!quit&& c == ERR)
 			{
 
 				pen(STOPPULSE);
-				delay(15);
+				safeDelay(15);
 				c = getch();
 			}
 			switch(c)
@@ -648,7 +832,7 @@ int servoControl()
 				case KEY_RIGHT:
 					mvprintw(20,3,"Right arrrow pressed!");
 					pen(value);
-					delay(30);
+					safeDelay(30);
 					break;
 				case KEY_BACKSPACE:
 					mvprintw(20,3,"BackSpace pressed!");
@@ -678,16 +862,16 @@ int manualControl()
 	refresh();
 	keypad(stdscr,TRUE);
 	int choice = 0;
-	while(1)
+	while(!quit)
 	{
 		nodelay(stdscr,1);
 		//	noecho();
 			int c = getch();
-			while( c == ERR)
+			while(!quit&& c == ERR)
 			{
 
 				pen(STOPPULSE);
-				delay(15);
+				safeDelay(15);
 				c = getch();
 			}
 		switch(c)
@@ -721,14 +905,12 @@ int manualControl()
 			case KEY_NPAGE:
 				if(DEBUG)
 				mvprintw(20,3,"Page Up arrrow pressed!");
-				pen(250);
-				delay(30);
+				penMove(1);
 				break;
 			case KEY_PPAGE:
 				if(DEBUG)
 				mvprintw(20,3,"Page down arrrow pressed!");
-				pen(50);
-				delay(30);
+				penMove(0);
 				break;
 			default:
 				mvprintw(24, 3, "Charcter pressed is = %3d Hopefully it can be printed as '%c'", c, c);
@@ -780,7 +962,7 @@ int menus(char * title,char * choices[], char * description[],int n_choices,int 
 	refresh();
 	
 	print_menu(menu_win, highlight,choices,description,n_choices,startx,starty,height,width,descript_win);
-	while(1)
+	while(!quit)
 	{
 	c = wgetch(menu_win);
 		switch(c)
