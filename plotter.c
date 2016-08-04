@@ -159,9 +159,9 @@ int optoControl()
 {
 	clearScreen();
 	
-	double ticks = 0.0;
 	mvprintw(3,4,"Press Enter when ready to start recording the opto sensor, or q to exit!");
 	//mvprintw(14,10,"Opto Sensor reading:%s\tTicks:%d",(!isOn1)?"Open!!":"Blocked!!!",ticks);
+	nodelay(stdscr,0);
 	char c = getch();
 	switch(c)
 	{
@@ -171,16 +171,16 @@ int optoControl()
 		case 'Q':
 			return 0;
 			break;
-		defautl:
+		default:
 			break;
 
 	}
 	keypad(stdscr,TRUE);
 	bool isback = false;
-	int count = 0;
+	int xticks = 0;
+	int yticks = 0;
 	while(!quit)
 	{
-		nodelay(stdscr,0);
 		keypad(stdscr,TRUE);
 		nodelay(stdscr,1);
 		noecho();
@@ -188,43 +188,32 @@ int optoControl()
 		getch();
 		int c = getch();
 		mvprintw(8,5,"Press arrow key to change direction right now we are counting ticks %s, \n\tRight arrow to count up and left arrow to count down",(isback)?"down":"up");
-		printw("\n Using pin by Wiring pi 15 witch is 4th pin on the right down. right next to the ground");
 		move(14,0);
 		clrtoeol();
-		mvprintw(14,10,"\tTicks:%d",count);
-			
-		while(!quit  && c == ERR)
-		{
-		//	if(digitalRead(optoSensorX1)!=isOn1)	
-		//	{	
-	//			count++;
-		//		isOn1=isOn1;
-		//		if(isback)
-		//			count--;	
-		//		else 
-		//			count++;
-		//		move(14,0);
-		//		clrtoeol();
-		//		mvprintw(14,10,"\tTicks:%d",count);
-		//	
-		//	}
-		//	else if(digitalRead(optoSensorX2)!=isOn2)
-		//	{
-		//		isOn2=!isOn2;
-		//		if(isback)
-		//			count--;	
-		//		else 
-		//			count++;
-		//		move(14,0);
-		//		clrtoeol();
-		//		mvprintw(14,10,"\tTicks:%d",count);
+		mvprintw(14,10,"\tX-Ticks:%d\tY-Ticks:%d",xticks,yticks);
+		refresh();
 			
 
-		//	}
-		//	refresh();
-		//	safeDelay(1);
-			c = getch();
-		}
+		while(!quit  && c == ERR)
+		{
+			int result = didTick(1,1);
+			safeDelay(1);
+			c=getch();
+			if(result==0)
+				continue;
+			if(result==1)
+				xticks=(isback)?xticks-1:xticks+1;
+			if(result==-1)
+				yticks=(isback)?yticks-1:yticks+1;
+		
+			move(14,0);
+			clrtoeol();
+			mvprintw(14,10,"\tX-Ticks:%d\tY-Ticks:%d",xticks,yticks);
+			refresh();
+		}	
+		move(20,0);
+		clrtoeol();
+
 		switch(c)
 		{
 			case 'q':
@@ -233,7 +222,8 @@ int optoControl()
 				return 0;
 				break;
 			case 'r':
-				count = 0;
+				xticks = 0;
+				yticks = 0;
 				break;
 			case KEY_RIGHT:
 				mvprintw(20,3,"Right arrrow pressed!");
@@ -251,10 +241,6 @@ int optoControl()
 		safeDelay(10);
 		refresh();
 	}
-	
-
-
-
 
 
 	return 0;
