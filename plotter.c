@@ -39,6 +39,8 @@ bool quit = false;
 int posX = -1;
 int posY = -1;
 bool penUp = false;
+bool optoValue[4];
+double penAffect = -1;
 long timing[(MAXSIZEX>MAXSIZEY)?MAXSIZEX+2:MAXSIZEY+2][4];
 void clearScreen();
 void print_menu(WINDOW *menu_win, int highlight,char * choices[],char * description[], int n_choices,int startx,int starty,int height,int wordwidth,WINDOW * descript_win);
@@ -57,6 +59,7 @@ int xyControl();
 void initalize();
 int safeDelay(int duration);
 void allSTOP();
+int didTick(int checkX,int checkY);
 int main()
 {
 	wiringPiSetup();
@@ -102,7 +105,7 @@ int main()
 				break;
 			case 6:
 			case -1:
-				quit = true;
+				return 0; 
 				break;
 
 		}
@@ -110,16 +113,55 @@ int main()
 	endwin();
 	return 0;
 }
+int didTick(int checkX,int checkY) //return 0 if no change. return 1 if x changed return -1 if y changed
+{
+	if(optoValue == NULL)
+	{
+		mvprint(4,0,"OptoValue is null so inializing!!!! HIt enter to continue!");
+		refresh();
+		while(getch()!= ERR)
+		{
+			delay(1);
+		}
+		pinMode(optoSensorX1,INPUT);
+		pinMode(optoSensorX2,INPUT);
+		pinMode(optoSensorY1,INPUT);
+		pinMode(optoSensorY2,INPUT);
+		optoValue[0]=digitalRead(optoSensorX1);
+		optoValue[1]=digitalRead(optoSensorX2);
+		optoValue[2]=digitalRead(optoSensorY1);
+		optoValue[3]=digitalRead(optoSensorY2);
+		return 0;
+	}
+	if(!checkX&&optoValue[0]!=digitalRead(optoSensorX1))
+	{
+		optoValue[0]!=optoValue[0];
+		return 1;
+	}
+	else if(!checkX&&optoValue[1]!=digitalRead(optoSensorX2))
+	{
+		optoValue[1]!=optoValue[1];
+		return 1;
+	}
+	if(!checkY&&optoValue[2]!=digitalRead(optoSensorY1))
+	{
+		optoValue[2]!=optoValue[2];
+		return -1;
+	}
+	else if(!checkY&&optoValue[3]!=digitalRead(optoSensorY2))
+	{
+		optoValue[3]!=optoValue[3];
+		return -1;
+	}
+	return 0;
+}
 int optoControl()
 {
 	clearScreen();
-	pinMode(optoSensorX1,INPUT);
-	pinMode(optoSensorX2,INPUT);
-	bool isOn1 = digitalRead(optoSensorX1);
-	bool isOn2 = digitalRead(optoSensorX2); 
+	
 	double ticks = 0.0;
 	mvprintw(3,4,"Press Enter when ready to start recording the opto sensor, or q to exit!");
-	mvprintw(14,10,"Opto Sensor reading:%s\tTicks:%d",(!isOn1)?"Open!!":"Blocked!!!",ticks);
+	//mvprintw(14,10,"Opto Sensor reading:%s\tTicks:%d",(!isOn1)?"Open!!":"Blocked!!!",ticks);
 	char c = getch();
 	switch(c)
 	{
@@ -153,34 +195,34 @@ int optoControl()
 			
 		while(!quit  && c == ERR)
 		{
-			if(digitalRead(optoSensorX1)!=isOn1)	
-			{	
+		//	if(digitalRead(optoSensorX1)!=isOn1)	
+		//	{	
 	//			count++;
-				isOn1=isOn1;
-				if(isback)
-					count--;	
-				else 
-					count++;
-				move(14,0);
-				clrtoeol();
-				mvprintw(14,10,"\tTicks:%d",count);
-			
-			}
-			else if(digitalRead(optoSensorX2)!=isOn2)
-			{
-				isOn2=!isOn2;
-				if(isback)
-					count--;	
-				else 
-					count++;
-				move(14,0);
-				clrtoeol();
-				mvprintw(14,10,"\tTicks:%d",count);
+		//		isOn1=isOn1;
+		//		if(isback)
+		//			count--;	
+		//		else 
+		//			count++;
+		//		move(14,0);
+		//		clrtoeol();
+		//		mvprintw(14,10,"\tTicks:%d",count);
+		//	
+		//	}
+		//	else if(digitalRead(optoSensorX2)!=isOn2)
+		//	{
+		//		isOn2=!isOn2;
+		//		if(isback)
+		//			count--;	
+		//		else 
+		//			count++;
+		//		move(14,0);
+		//		clrtoeol();
+		//		mvprintw(14,10,"\tTicks:%d",count);
 			
 
-			}
-			refresh();
-			safeDelay(1);
+		//	}
+		//	refresh();
+		//	safeDelay(1);
 			c = getch();
 		}
 		switch(c)
@@ -582,24 +624,16 @@ int plot()
 //	}
 int safeDelay(int duration)
 {
-	mvprintw(1,0,"SAFE DELAY!!");
-	refresh();
+	if(quit)
+		return 1;
 	nodelay(stdscr,1);
 	clock_t before = clock();
 	//int c = getch();
 	do
 	{
 		int newc = getch();
-		move(3,0);
-		clrtoeol();
-		mvprintw(3,0,"DID NOT READ ANTTHING WE GO-%i",newc);
-		refresh();
 		if(newc==27&&getch()==-1)
 		{
-			mvprintw(2,0,"GOT THAT YOU HIT QUIT!!!!");
-			nodelay(stdscr,0);
-			refresh();
-			getch();
 			allSTOP();
 			quit = true;
 			return 1;
@@ -624,18 +658,62 @@ void allSTOP()
 	digitalWrite(motorYB,LOW);
 	pen(STOPPULSE);	
 }
-void movex(int duration)
+void movex(int xdist)
 {
-	movexy(duration,0);
+	movexy(xdist,0);
 }
-void movey(int duration)
+void movey(int ydist)
 {
-	movexy(0,duration);
+	movexy(0,ydist);
 }
 void movexy(int xdist, int ydist)
 {
 	if(posX==-1||posY==-1)
 		initalize();	
+	if(penUp)
+	{
+		bool foundX = false;
+		bool foundY = false;
+		if(xdist<0)    //need to go backwords
+		{
+		digitalWrite(motorXA,HIGH);
+		digitalWrite(motorXB,LOW);
+		}else if (xdist>0)  //need to go fowards
+		{
+		digitalWrite(motorXA,LOW);
+		digitalWrite(motorXB,HIGH);
+		}else                //already at the correct x point
+		{
+		digitalWrite(motorXA,LOW);
+		digitalWrite(motorXB,LOW);
+		foundX = true;
+		}
+		if(ydist<0)
+		{                      //need to go backwords
+		digitalWrite(motorYA,HIGH);
+		digitalWrite(motorYB,LOW);
+
+		}else if (ydist>0)  //need to go fowards
+		{
+		digitalWrite(motorYA,LOW);
+		digitalWrite(motorYB,HIGH);
+		}else              //alrady at the correct pint
+		{
+		digitalWrite(motorYA,LOW);
+		digitalWrite(motorYB,LOW);
+		foundY = true;
+		}
+		while(!foundX||!foundY)
+		{
+			
+			if(!foundX)
+			{
+			}
+			if(!foundY)
+			{
+			}
+		}
+	}
 }
 void initalize()
 {
@@ -645,10 +723,6 @@ void initalize()
 	pinMode(motorXB,OUTPUT);
 	pinMode(motorYA,OUTPUT);
 	pinMode(motorYB,OUTPUT);
-	pinMode(optoSensorX1,INPUT);
-	pinMode(optoSensorX2,INPUT);
-	pinMode(optoSensorY1,INPUT);
-	pinMode(optoSensorY2,INPUT);
 	digitalWrite(motorXA,LOW);
 	digitalWrite(motorXB,LOW);
 	digitalWrite(motorYA,LOW);
@@ -657,6 +731,7 @@ void initalize()
 	keypad(stdscr,TRUE);
 	while(!quit)
 	{
+		mvprintw(4,10,"Initalizing ....");
 		mvprintw(5,10,"Please use Page Up and Page Down Arrows to move the pen to just touching the page,When centered hit 'q'");
 		pen(STOPPULSE);
 		int c = getch();
@@ -680,12 +755,19 @@ void initalize()
 		
 	}
 	penMove(1);
+	move(5,0);
+	clrtoeol();
+	mvprintw(5,10,"Finding position 0 on X axis...");
+	refresh();
 	if(digitalRead(Xstop))
 	{
 		digitalWrite(motorXA,HIGH);	
 		safeDelay(500);
 		digitalWrite(motorXA,LOW);
 	}
+	clrtoeol();
+	mvprintw(5,10,"Finding position 0 on Y axis...");
+	refresh();
 	digitalWrite(motorXB,HIGH);
 	while(!quit&&!digitalRead(Xstop))
 		safeDelay(1);
@@ -703,47 +785,38 @@ void initalize()
 	posY=0;
 	digitalWrite(motorYB,LOW);
 	clock_t before = clock();
-	bool OptoX1 = digitalRead(optoSensorX1);		
-	bool OptoX2 = digitalRead(optoSensorX2);
+	clrtoeol();
+	mvprintw(5,10,"Seting up timing increment on the X axis...");
+	refresh();
 	digitalWrite(motorXA,HIGH);
 	while(!quit&&posX<=MAXSIZEX)
 	{
-		if(OptoX1!=digitalRead(optoSensorX1))
-			OptoX1 = !OptoX1;
-		else if(OptoX2!=digitalRead(optoSensorX2))
-			OptoX2 = !OptoX2;
-		else	
+		if(didTick(1,0)==0)
 			continue;
 		timing[posX][0] = (long) clock();	
 		posX++;
 		safeDelay(1);
 	}
 	digitalWrite(motorXA,LOW);
+	printw("Going back down");
 	digitalWrite(motorXB,HIGH);
 	while(!quit&&posX>=0)
 	{
-		if(OptoX1!=digitalRead(optoSensorX1))
-			OptoX1 = !OptoX1;
-		else if(OptoX2!=digitalRead(optoSensorX2))
-			OptoX2 = !OptoX2;
-		else	
+		if(didTick(1,0)==0)
 			continue;
 		timing[posX][1] = (long) clock();	
 		posX--;
 		safeDelay(1);
 	}
+	clrtoeol();
+	mvprintw(5,10,"Seting up timing increment on the Y axis...");
+	refresh();
 	digitalWrite(motorXB,LOW);
 	before = clock();
-	bool OptoY1 = digitalRead(optoSensorY1);		
-	bool OptoY2 = digitalRead(optoSensorY2);
 	digitalWrite(motorYA,HIGH);
-	while(!quit&&posX<=MAXSIZEX)
+	while(!quit&&posY<=MAXSIZEX)
 	{
-		if(OptoX1!=digitalRead(optoSensorY1))
-			OptoY1 = !OptoY1;
-		else if(OptoY2!=digitalRead(optoSensorY2))
-			OptoY2 = !OptoY2;
-		else	
+		if(didTick(1,0)==0)
 			continue;
 		timing[posY][3] = (long) clock();	
 		posY++;
@@ -751,22 +824,16 @@ void initalize()
 	}
 	digitalWrite(motorYA,LOW);
 	digitalWrite(motorYB,HIGH);
+	printw("Going back down");
 	while(!quit&&posY>=0)
 	{
-		if(OptoY1!=digitalRead(optoSensorY1))
-			OptoY1 = !OptoY1;
-		else if(OptoY2!=digitalRead(optoSensorY2))
-			OptoY2 = !OptoY2;
-		else	
+		if(didTick(0,1)==0)
 			continue;
 		timing[posY][4] = (long) clock();	
 		posY--;
 		safeDelay(1);
 	}
 	digitalWrite(motorYB,LOW);
-
-
-
 }
 void penMove(bool goUp)
 {
