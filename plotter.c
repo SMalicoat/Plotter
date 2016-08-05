@@ -62,6 +62,7 @@ void initalize();
 int safeDelay(int duration);
 void allSTOP();
 int didTick(int checkX,int checkY);
+void power(int pin,int percent);
 int main()
 {
 	wiringPiSetup();
@@ -131,12 +132,12 @@ int didTick(int checkX,int checkY) //return 0 if no change. return 1 if x change
 		optoValue[1]=digitalRead(optoSensorX2);
 		optoValue[2]=digitalRead(optoSensorY1);
 		optoValue[3]=digitalRead(optoSensorY2);
-		printw("\n the value of sensor 1 and 2 are:::%d\n%d",optoValue[0],optoValue[1]);
-		refresh();
-		while(getch()!= ERR)
-		{
-			delay(1);
-		}
+	//	printw("\n the value of sensor 1 and 2 are:::%d\n%d",optoValue[0],optoValue[1]);
+	//	refresh();
+	//	while(getch()!= ERR)
+	//	{
+	//		delay(1);
+	//	}
 		return 0;
 	}
 	if(checkX&&(optoValue[0]!=digitalRead(optoSensorX1)))
@@ -162,7 +163,8 @@ int didTick(int checkX,int checkY) //return 0 if no change. return 1 if x change
 	return 0;
 }
 int optoControl()
-{ clearScreen();
+{ 
+	clearScreen();
 	
 	mvprintw(3,4,"Press Enter when ready to start recording the opto sensor, or q to exit!");
 	//mvprintw(14,10,"Opto Sensor reading:%s\tTicks:%d",(!isOn1)?"Open!!":"Blocked!!!",ticks);
@@ -645,11 +647,17 @@ void allSTOP()
 	pinMode(motorXB,OUTPUT);
 	pinMode(motorYA,OUTPUT);
 	pinMode(motorYB,OUTPUT);
-	digitalWrite(motorXA,LOW);
-	digitalWrite(motorXB,LOW);
-	digitalWrite(motorYA,LOW);
-	digitalWrite(motorYB,LOW);
+	power(motorXA,0);
+	power(motorXB,0);
+	power(motorYA,0);
+	power(motorYB,0);
 	pen(STOPPULSE);	
+}
+void power(int pin,int percent)
+{
+	char output[100];
+	sprintf(output,"echo %i=%i%% > /dev/servoblaster",pin,percent);
+	system(output);
 }
 void movex(int Xdist)
 {
@@ -669,36 +677,36 @@ void movexy(int Xdist, int Ydist)
 		bool foundY = false;
 		if(Xdist<10)    //need to go backwords
 		{
-		digitalWrite(motorXA,HIGH);
-		digitalWrite(motorXB,LOW);
+		power(motorXA,100);
+		power(motorXB,0);
 		}else if (Xdist>10)  //need to go fowards
 		{
-		digitalWrite(motorXA,LOW);
-		digitalWrite(motorXB,HIGH);
+		power(motorXA,0);
+		power(motorXB,100);
 		}else                //already at the correct x point
 		{
-		digitalWrite(motorXA,LOW);
-		digitalWrite(motorXB,LOW);
+		power(motorXA,0);
+		power(motorXB,0);
 		foundX = true;
 		}
 		if(Ydist<10)
 		{                      //need to go backwords
-		digitalWrite(motorYA,HIGH);
-		digitalWrite(motorYB,LOW);
+		power(motorYA,100);
+		power(motorYB,0);
 
 		}else if (Ydist>10)  //need to go fowards
 		{
-		digitalWrite(motorYA,LOW);
-		digitalWrite(motorYB,HIGH);
+		power(motorYA,0);
+		power(motorYB,100);
 		}else              //alrady at the correct pint
 		{
-		digitalWrite(motorYA,LOW);
-		digitalWrite(motorYB,LOW);
+		power(motorYA,0);
+		power(motorYB,0);
 		foundY = true;
 		}
 		while(!foundX||!foundY)
 		{
-			int result = didTick((int)!foundX,!foundY);		
+			int result = didTick(!foundX,!foundY);		
 			if(!foundX)
 			{
 				if(result==1)
@@ -706,8 +714,8 @@ void movexy(int Xdist, int Ydist)
 					posX = (Xdist>posX)?posX+10:posX-10;//increment the posX for we moved the machine
 					Xdist = (Xdist>posX)?Xdist-10:Xdist+10;//decrease the value that we still have to go 
 					if(abs(posX-Xdist)<=10)
-						digitalWrite(motorXA,LOW);
-						digitalWrite(motorXB,LOW);
+						power(motorXA,0);
+						power(motorXB,0);
 						foundX = true;
 				}
 
@@ -720,13 +728,15 @@ void movexy(int Xdist, int Ydist)
 					Ydist = (Ydist>posY)?Ydist-10:Ydist+10;//decrease the value that we still have to go 
 					if(abs(posY-Ydist)<=10)
 					{
-						digitalWrite(motorYA,LOW);
-						digitalWrite(motorYB,LOW);
+						power(motorYA,0);
+						power(motorYB,0);
 						foundY = true;
 					}
 				}
 			}
+			safeDelay(1);
 		}
+		
 	}
 }
 void initalize()
@@ -737,10 +747,10 @@ void initalize()
 	pinMode(motorXB,OUTPUT);
 	pinMode(motorYA,OUTPUT);
 	pinMode(motorYB,OUTPUT);
-	digitalWrite(motorXA,LOW);
-	digitalWrite(motorXB,LOW);
-	digitalWrite(motorYA,LOW);
-	digitalWrite(motorYB,LOW);
+	power(motorXA,0);
+	power(motorXB,0);
+	power(motorYA,0);
+	power(motorYB,0);
 	clearScreen();
 	keypad(stdscr,TRUE);
 	while(!quit)
@@ -775,34 +785,34 @@ void initalize()
 	refresh();
 	if(digitalRead(Xstop))
 	{
-		digitalWrite(motorXA,HIGH);	
+		power(motorXA,100);	
 		safeDelay(500);
-		digitalWrite(motorXA,LOW);
+		power(motorXA,0);
 	}
 	clrtoeol();
 	mvprintw(5,10,"Finding position 0 on Y axis...");
 	refresh();
-	digitalWrite(motorXB,HIGH);
+	power(motorXB,100);
 	while(!quit&&!digitalRead(Xstop))
 		safeDelay(1);
 	posX=0;
-	digitalWrite(motorXB,LOW);
+	power(motorXB,0);
 	if(digitalRead(Ystop))
 	{
-		digitalWrite(motorYA,HIGH);	
+		power(motorYA,100);	
 		safeDelay(500);
-		digitalWrite(motorYA,LOW);
+		power(motorYA,0);
 	}
-	digitalWrite(motorYB,HIGH);
+	power(motorYB,100);
 	while(!quit&&!digitalRead(Ystop))
 		safeDelay(1);
 	posY=0;
-	digitalWrite(motorYB,LOW);
+	power(motorYB,0);
 	clock_t before = clock();
 	clrtoeol();
 	mvprintw(5,10,"Seting up timing increment on the X axis...");
 	refresh();
-	digitalWrite(motorXA,HIGH);
+	power(motorXA,100);
 	while(!quit&&posX/10<=MAXSIZEX)
 	{
 		if(didTick(1,0)==0)
@@ -811,9 +821,9 @@ void initalize()
 		posX+=10;
 		safeDelay(1);
 	}
-	digitalWrite(motorXA,LOW);
+	power(motorXA,0);
 	printw("Going back down");
-	digitalWrite(motorXB,HIGH);
+	power(motorXB,100);
 	while(!quit&&posX/10>=0)
 	{
 		if(didTick(1,0)==0)
@@ -825,9 +835,9 @@ void initalize()
 	clrtoeol();
 	mvprintw(5,10,"Seting up timing increment on the Y axis...");
 	refresh();
-	digitalWrite(motorXB,LOW);
+	power(motorXB,0);
 	before = clock();
-	digitalWrite(motorYA,HIGH);
+	power(motorYA,100);
 	while(!quit&&posY/10<=MAXSIZEX)
 	{
 		if(didTick(1,0)==0)
@@ -836,8 +846,8 @@ void initalize()
 		posY+=10;
 		safeDelay(1);
 	}
-	digitalWrite(motorYA,LOW);
-	digitalWrite(motorYB,HIGH);
+	power(motorYA,0);
+	power(motorYB,100);
 	printw("Going back down");
 	while(!quit&&posY/10>=0)
 	{
@@ -847,7 +857,7 @@ void initalize()
 		posY-=10;
 		safeDelay(1);
 	}
-	digitalWrite(motorYB,LOW);
+	power(motorYB,0);
 }
 void penMove(bool goUp)
 {
