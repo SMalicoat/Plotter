@@ -31,6 +31,9 @@
 #define MAXSIZEX 120
 #define MAXSIZEY 120
 
+double penRateX = 0.9;
+double penRateY = 0.9;
+
 int count = 0;
 int pulse = -1;
 int oldPulse = -1;
@@ -663,6 +666,8 @@ void movexy(int Xdist, int Ydist)// note this is moving relative to where we are
 		Ydist = MAXSIZEY-posY;
 	if(posY+Ydist<0)
 		Ydist = -posY;
+	if(Xdist==0&&Ydist==0)
+		return;
 
 	if(penUp)
 	{
@@ -780,9 +785,11 @@ void movexy(int Xdist, int Ydist)// note this is moving relative to where we are
 						Xdist += moved;
 					}
 					if(abs(Xdist)<=10)
+					{
 						power(motorXA,0);
 						power(motorXB,0);
 						foundX = true;
+					}
 				}
 
 			}
@@ -947,7 +954,7 @@ void movexy(int Xdist, int Ydist)// note this is moving relative to where we are
 		
 		Xtime -= (((double)((posX+Xdist)%10))/10)*(timing[(posX+Xdist)/10][1]-timing[(posX+Xdist)/10+1][1]);
 				}
-	else //we are within 10 of where we need to go. tread carefully
+	else //we are already there 
 	{
 		Xtime = 0.0;
 	}
@@ -974,10 +981,85 @@ void movexy(int Xdist, int Ydist)// note this is moving relative to where we are
 
 	//	Ytime += (((double)(10-(Ydist+posY)%10))/10)*(timing[(Ydist+posY)/10][3]-timing[((Ydist+posY)/10)+1][3]);// get the first part  |.....| 
 	}
-	else //we are within 10 of where we need to go. tread carefully
+	else //we are alredy there 
 	{
 		Ytime = 0.0;
 	}
+	if(Ytime==0) //need to just move in the X direction
+	{
+		if(Xdist>10)    //need to go fowards 
+		{
+			power(motorXA,100);
+			power(motorXB,0);
+		}else if (Xdist<-10)  //need to go backword 
+		{
+			power(motorXA,0);
+			power(motorXB,100);
+		}else if(abs(posX/10-(posX+Xdist)/10)>0)
+		{
+			if(Xdist>0)
+				power(motorXA,50);
+			else
+				power(motorXB,50);
+			while(didTick(1,0)!=1)
+			{
+				safeDelay(1);
+			}
+			power(motorXA,0);
+			power(motorXB,0);
+			int moved;
+			if(Xdist>0)
+			{
+				moved = 10 - posX % 10;
+				posX  += moved;
+				Xdist -= moved;
+				//increment the posX for we moved the machine
+				//decrease the value that we still have to go 
+			}
+			else
+			{
+				moved = posX % 10;
+				moved = (moved == 0)?10:moved;
+				posX  -= moved;
+				Xdist += moved;
+			}
+		//	foundX = true;
+			while(1/*!foundX||!foundY*/)
+			{
+				int result = didTick(!foundX,!foundY);		
+				int moved;
+				if(!foundX)
+				{
+					if(result==1)
+					{
+						if(Xdist>0)
+						{
+							moved = 10 - (posX % 10);
+							posX  += moved;
+							Xdist -= moved;
+							//increment the posY for we moved the machine
+							//decrease the value that we still have to go 
+						}
+						else
+						{
+							moved = posX%10;
+							moved = (moved==0)?10:moved;	
+							posX  -= moved;
+							Xdist += moved;
+						}
+						if(abs(Xdist)<=10)
+						{
+							power(motorXA,0);
+							power(motorXB,0);
+							foundX = true;
+						}
+					}
+				}
+			
+			}
+		}	
+	}
+
 }
 void initalize()
 {
