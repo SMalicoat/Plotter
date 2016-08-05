@@ -19,8 +19,8 @@
 #define STOPPULSE 150
 #define optoSensorX1 1
 #define optoSensorX2 7
-#define optoSensorY1 18
-#define optoSensorY2 18
+#define optoSensorY1 4 
+#define optoSensorY2 8
 #define motorXA 16
 #define motorXB 16
 #define motorYA 15
@@ -139,24 +139,24 @@ int didTick(int checkX,int checkY) //return 0 if no change. return 1 if x change
 		}
 		return 0;
 	}
-	if(checkX&&optoValue[0]!=digitalRead(optoSensorX1))
+	if(checkX&&(optoValue[0]!=digitalRead(optoSensorX1)))
 	{
-		optoValue[0]!=optoValue[0];
+		optoValue[0]=!optoValue[0];
 		return 1;
 	}
-	else if(checkX&&optoValue[1]!=digitalRead(optoSensorX2))
+	else if(checkX&&(optoValue[1]!=digitalRead(optoSensorX2)))
 	{
-		optoValue[1]!=optoValue[1];
+		optoValue[1]=!optoValue[1];
 		return 1;
 	}
-	if(checkY&&optoValue[2]!=digitalRead(optoSensorY1))
+	if(checkY&&(optoValue[2]!=digitalRead(optoSensorY1)))
 	{
-		optoValue[2]!=optoValue[2];
+		optoValue[2]=!optoValue[2];
 		return -1;
 	}
-	else if(checkY&&optoValue[3]!=digitalRead(optoSensorY2))
+	else if(checkY&&(optoValue[3]!=digitalRead(optoSensorY2)))
 	{
-		optoValue[3]!=optoValue[3];
+		optoValue[3]=!optoValue[3];
 		return -1;
 	}
 	return 0;
@@ -201,8 +201,7 @@ int optoControl()
 
 		while(!quit  && c == ERR)
 		{
-			int result = didTick(1,0);     //@@@@NEED TO CHANGE THIS AFTER FINISH DEBUGING!!!
-
+			int result = didTick(1,1); 	
 			delay(1);
 //`		safeDelay(1);
 			c=getch();
