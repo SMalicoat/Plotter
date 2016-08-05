@@ -15,19 +15,18 @@
 #define HEIGHT 10 
 
 #define DEBUG 0
-#define SERVOPIN 1
-#define STOPPULSE 150
-#define optoSensorX1 1
-#define optoSensorX2 7
-#define optoSensorY1 4 
-#define optoSensorY2 5
-#define motorXA 16
-#define motorXB 16
-#define motorYA 15
-#define motorYB 15
-#define penServo 2    //must be acuroind to servoblaster wiring convention
-#define Xstop 18
-#define Ystop 18      //the pin that the touch sensor is located on tellign the y asix to stop at 0
+#define STOPPULSE 150   //all of the pin numbers are wiringPI standard!!
+#define optoSensorX1 4 
+#define optoSensorX2 5
+#define optoSensorY1 6
+#define optoSensorY2 18
+#define motorXA 7 
+#define motorXB 0 
+#define motorYA 2 
+#define motorYB 3 
+#define penServo 1   
+#define Xstop 17 
+#define Ystop 19      //the pin that the touch sensor is located on tellign the y asix to stop at 0
 
 #define MAXSIZEX 120
 #define MAXSIZEY 120
@@ -166,22 +165,6 @@ int optoControl()
 { 
 	clearScreen();
 	
-	mvprintw(3,4,"Press Enter when ready to start recording the opto sensor, or q to exit!");
-	//mvprintw(14,10,"Opto Sensor reading:%s\tTicks:%d",(!isOn1)?"Open!!":"Blocked!!!",ticks);
-	nodelay(stdscr,0);
-	char c = getch();
-	switch(c)
-	{
-		case '\n':
-			break;
-		case 'q':
-		case 'Q':
-			return 0;
-			break;
-		default:
-			break;
-
-	}
 	keypad(stdscr,TRUE);
 	bool isback = false;
 	int xticks = 0;
