@@ -48,7 +48,7 @@ int menus(char* title,char * choices[], char * description[],int n_choices,int w
 int manualControl();
 void movex(int duration);
 void movey(int duration);
-void movexy(int xdist,int ydist);
+void movexy(int Xdist,int Ydist);
 void pen(int steps);
 void penMove(bool goUp);
 int servoControl();
@@ -494,8 +494,8 @@ int xyControl()
 	clearScreen();
 	echo();
 	curs_set(2);
-	int xdist = 0;
-	int ydist = 0;
+	int Xdist = 0;
+	int Ydist = 0;
 	while(!quit)
 	{    //must be acuroind to servoblaster wiring convention
 		move(10,0);
@@ -505,8 +505,8 @@ int xyControl()
 		refresh();
 		mvprintw(10,5,"Curent Position: X:%d\tY:%d",posX,posY);
 		mvprintw(14,5,"Move:");
-		mvprintw(14,12,"X:%d",xdist);
-		mvprintw(14,22,"Y:%d",ydist);
+		mvprintw(14,12,"X:%d",Xdist);
+		mvprintw(14,22,"Y:%d",Ydist);
 		move(14,14);
 		refresh();
 		char valueString [6];
@@ -520,7 +520,7 @@ int xyControl()
 			ungetch(c);
 			move(14,14);
 			getnstr(valueString,6);
-			xdist = atoi(valueString);
+			Xdist = atoi(valueString);
 		}
 		move(14,24);
 		c = getch();
@@ -533,17 +533,17 @@ int xyControl()
 			ungetch(c);
 			move(14,24);
 			getnstr(valueString,6);
-			ydist = atoi(valueString);
+			Ydist = atoi(valueString);
 		
 		}
 		move(15,4);
 		clrtoeol;
 		//getch();
-		mvprintw(15,5,"MOVING       X:%d,   Y:%d              ",xdist,ydist);
+		mvprintw(15,5,"MOVING       X:%d,   Y:%d              ",Xdist,Ydist);
 		refresh();
-		posX +=xdist;
-		posY +=ydist;
-		movexy(xdist,ydist);
+		posX +=Xdist;
+		posY +=Ydist;
+		movexy(Xdist,Ydist);
 	}
 
 }
@@ -644,15 +644,15 @@ void allSTOP()
 	digitalWrite(motorYB,LOW);
 	pen(STOPPULSE);	
 }
-void movex(int xdist)
+void movex(int Xdist)
 {
-	movexy(xdist,0);
+	movexy(Xdist,0);
 }
-void movey(int ydist)
+void movey(int Ydist)
 {
-	movexy(0,ydist);
+	movexy(0,Ydist);
 }
-void movexy(int xdist, int ydist)
+void movexy(int Xdist, int Ydist)
 {
 	if(posX==-1||posY==-1)
 		initalize();	
@@ -660,11 +660,11 @@ void movexy(int xdist, int ydist)
 	{
 		bool foundX = false;
 		bool foundY = false;
-		if(xdist<0)    //need to go backwords
+		if(Xdist<10)    //need to go backwords
 		{
 		digitalWrite(motorXA,HIGH);
 		digitalWrite(motorXB,LOW);
-		}else if (xdist>0)  //need to go fowards
+		}else if (Xdist>10)  //need to go fowards
 		{
 		digitalWrite(motorXA,LOW);
 		digitalWrite(motorXB,HIGH);
@@ -674,12 +674,12 @@ void movexy(int xdist, int ydist)
 		digitalWrite(motorXB,LOW);
 		foundX = true;
 		}
-		if(ydist<0)
+		if(Ydist<10)
 		{                      //need to go backwords
 		digitalWrite(motorYA,HIGH);
 		digitalWrite(motorYB,LOW);
 
-		}else if (ydist>0)  //need to go fowards
+		}else if (Ydist>10)  //need to go fowards
 		{
 		digitalWrite(motorYA,LOW);
 		digitalWrite(motorYB,HIGH);
@@ -691,12 +691,33 @@ void movexy(int xdist, int ydist)
 		}
 		while(!foundX||!foundY)
 		{
-			
+			int result = didTick((int)!foundX,!foundY);		
 			if(!foundX)
 			{
+				if(result==1)
+				{
+					posX = (Xdist>posX)?posX+10:posX-10;//increment the posX for we moved the machine
+					Xdist = (Xdist>posX)?Xdist-10:Xdist+10;//decrease the value that we still have to go 
+					if(abs(posX-Xdist)<=10)
+						digitalWrite(motorXA,LOW);
+						digitalWrite(motorXB,LOW);
+						foundX = true;
+				}
+
 			}
 			if(!foundY)
 			{
+				if(result==-1)
+				{
+					posY = (Ydist>posY)?posY+10:posY-10;//increment the posY for we moved the machine
+					Ydist = (Ydist>posY)?Ydist-10:Ydist+10;//decrease the value that we still have to go 
+					if(abs(posY-Ydist)<=10)
+					{
+						digitalWrite(motorYA,LOW);
+						digitalWrite(motorYB,LOW);
+						foundY = true;
+					}
+				}
 			}
 		}
 	}
@@ -775,23 +796,23 @@ void initalize()
 	mvprintw(5,10,"Seting up timing increment on the X axis...");
 	refresh();
 	digitalWrite(motorXA,HIGH);
-	while(!quit&&posX<=MAXSIZEX)
+	while(!quit&&posX/10<=MAXSIZEX)
 	{
 		if(didTick(1,0)==0)
 			continue;
-		timing[posX][0] = (long) clock();	
-		posX++;
+		timing[posX/10][0] = (long) clock();	
+		posX+=10;
 		safeDelay(1);
 	}
 	digitalWrite(motorXA,LOW);
 	printw("Going back down");
 	digitalWrite(motorXB,HIGH);
-	while(!quit&&posX>=0)
+	while(!quit&&posX/10>=0)
 	{
 		if(didTick(1,0)==0)
 			continue;
-		timing[posX][1] = (long) clock();	
-		posX--;
+		timing[posX/10][1] = (long) clock();	
+		posX-=10;
 		safeDelay(1);
 	}
 	clrtoeol();
@@ -800,23 +821,23 @@ void initalize()
 	digitalWrite(motorXB,LOW);
 	before = clock();
 	digitalWrite(motorYA,HIGH);
-	while(!quit&&posY<=MAXSIZEX)
+	while(!quit&&posY/10<=MAXSIZEX)
 	{
 		if(didTick(1,0)==0)
 			continue;
-		timing[posY][3] = (long) clock();	
-		posY++;
+		timing[posY/10][3] = (long) clock();	
+		posY+=10;
 		safeDelay(1);
 	}
 	digitalWrite(motorYA,LOW);
 	digitalWrite(motorYB,HIGH);
 	printw("Going back down");
-	while(!quit&&posY>=0)
+	while(!quit&&posY/10>=0)
 	{
 		if(didTick(0,1)==0)
 			continue;
-		timing[posY][4] = (long) clock();	
-		posY--;
+		timing[posY/10][4] = (long) clock();	
+		posY-=10;
 		safeDelay(1);
 	}
 	digitalWrite(motorYB,LOW);
