@@ -650,10 +650,20 @@ void movey(int Ydist)
 {
 	movexy(0,Ydist);
 }
-void movexy(int Xdist, int Ydist)
+void movexy(int Xdist, int Ydist)// note this is moving relative to where we are
 {
 	if(posX==-1||posY==-1)
 		initalize();	
+
+	if(posX+Xdist>MAXSIZEX)              //make sure we dont go out of bounds too high
+		Xdist = MAXSIZEX-posX;
+	if(posX+Xdist<0)                    //make sure we dont go out of bound too low
+		Xdist = -posX;
+	if(posY+Ydist>MAXSIZEY)
+		Ydist = MAXSIZEY-posY;
+	if(posY+Ydist<0)
+		Ydist = -posY;
+
 	if(penUp)
 	{
 		bool foundX = false;
@@ -690,13 +700,27 @@ void movexy(int Xdist, int Ydist)
 		while(!foundX||!foundY)
 		{
 			int result = didTick(!foundX,!foundY);		
+			int moved;
 			if(!foundX)
 			{
 				if(result==1)
 				{
-					posX = (Xdist>posX)?posX+10:posX-10;//increment the posX for we moved the machine
-					Xdist = (Xdist>posX)?Xdist-10:Xdist+10;//decrease the value that we still have to go 
-					if(abs(posX-Xdist)<=10)
+					if(Xdist>0)
+					{
+						moved = 10 - (posX % 10);
+						posX  += moved;
+						Xdist -= moved;
+						//increment the posY for we moved the machine
+						//decrease the value that we still have to go 
+					}
+					else
+					{
+						moved = posX%10;
+						moved = (moved==0)?10:moved;	
+						posX  -= moved;
+						Xdist += moved;
+					}
+					if(abs(Xdist)<=10)
 						power(motorXA,0);
 						power(motorXB,0);
 						foundX = true;
@@ -707,9 +731,22 @@ void movexy(int Xdist, int Ydist)
 			{
 				if(result==-1)
 				{
-					posY = (Ydist>posY)?posY+10:posY-10;//increment the posY for we moved the machine
-					Ydist = (Ydist>posY)?Ydist-10:Ydist+10;//decrease the value that we still have to go 
-					if(abs(posY-Ydist)<=10)
+					if(Ydist>0)
+					{
+						moved = 10 - (posY % 10);
+						posY  += moved;
+						Ydist -= moved;
+						//increment the posY for we moved the machine
+						//decrease the value that we still have to go 
+					}
+					else
+					{
+						moved = (posY % 10);
+						moved = (moved==0)?10:moved;	
+						posY  -= moved;
+						Ydist += moved;
+					}
+					if(abs(Ydist)<=10)
 					{
 						power(motorYA,0);
 						power(motorYB,0);
@@ -718,6 +755,74 @@ void movexy(int Xdist, int Ydist)
 				}
 			}
 			safeDelay(1);
+		}
+		if(Xdist!=0 && posX % 10 == 0 && abs(Xdist) % 10 == 0) //if we are lucky and have to move exactly one tick
+		{
+			if(Xdist>0)
+				power(motorXA,50);
+			else
+				power(motorXB,50);
+			while(didTick(1,0)!=1)
+			{
+				safeDelay(1);
+			}
+			power(motorXA,0);
+			power(motorXB,0);
+			if(Ydist>0)
+			{
+				posX  += 10;
+				Xdist -= 10;
+				//increment the posX for we moved the machine
+				//decrease the value that we still have to go 
+			}
+			else
+			{
+				posX  -= 10;
+				Xdist += 10;
+			}
+		}
+		if(Ydist!=0 && posY % 10 == 0 && abs(Ydist) % 10 == 0)
+		{
+			if(Ydist>0)
+				power(motorYA,50);
+			else
+				power(motorYB,50);
+			while(didTick(0,1)!=-1)
+			{
+				safeDelay(1);
+			}
+			power(motorYA,0);
+			power(motorYB,0);
+			if(Ydist>0)
+			{
+				posY  += 10;
+				Ydist -= 10;
+				//increment the posY for we moved the machine
+				//decrease the value that we still have to go 
+			}
+			else
+			{
+				posY  -= 10;
+				Ydist += 10;
+			}
+					
+		}
+		double Xtime, Ytime;
+		if(Xdist>0)
+		{                   //becues timing[0] values get bigger as the index increase this is positive
+			Xtime = (.5)*Xdist*(timing[(posX)/10+1][0] - timing[posX/10][0]);
+		}             //becaues we are runing at 50% power and becues it is a fraction of that time now
+		else 
+		{                   //becues timing[1] vlues get bigger as the index decrses this is positive
+			Xtime = (-.5)*Xdist*(timing[(posX)/10-1][1]- timing[posX/10][1]);
+		}
+		if(Ydist>0)
+		{
+			Ytime = (.5)*Ydist*(timing[(posY)/10+1][2] - timing[posY/10][2]);
+		}
+		else 
+		{
+			Ytime = (-.5)*Ydist*(timing[(posY)/10-1][3]- timing[posY/10][3]);
 		}
 		
 	}
