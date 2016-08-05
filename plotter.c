@@ -17,8 +17,8 @@
 #define DEBUG 0
 #define SERVOPIN 1
 #define STOPPULSE 150
-#define optoSensorX1 15
-#define optoSensorX2 8
+#define optoSensorX1 1
+#define optoSensorX2 7
 #define optoSensorY1 18
 #define optoSensorY2 18
 #define motorXA 16
@@ -40,6 +40,7 @@ int posX = -1;
 int posY = -1;
 bool penUp = false;
 bool optoValue[4];
+int config = false;
 double penAffect = -1;
 long timing[(MAXSIZEX>MAXSIZEY)?MAXSIZEX+2:MAXSIZEY+2][4];
 void clearScreen();
@@ -55,6 +56,7 @@ int servoControl();
 int plot();
 FILE * chooseFile();
 void getMaxsizeofDIR(char * dir,int *files,int *length);
+int optoControl();
 int xyControl();
 void initalize();
 int safeDelay(int duration);
@@ -63,6 +65,7 @@ int didTick(int checkX,int checkY);
 int main()
 {
 	wiringPiSetup();
+
        	initscr();
 	noecho();
 	cbreak();
@@ -115,14 +118,11 @@ int main()
 }
 int didTick(int checkX,int checkY) //return 0 if no change. return 1 if x changed return -1 if y changed
 {
-	if(optoValue == NULL)
+	if(!config)
 	{
-		mvprint(4,0,"OptoValue is null so inializing!!!! HIt enter to continue!");
-		refresh();
-		while(getch()!= ERR)
-		{
-			delay(1);
-		}
+	config = true;
+		mvprintw(4,0,"OptoValue is null so inializing!!!! HIt enter to continue!");
+		
 		pinMode(optoSensorX1,INPUT);
 		pinMode(optoSensorX2,INPUT);
 		pinMode(optoSensorY1,INPUT);
@@ -131,24 +131,30 @@ int didTick(int checkX,int checkY) //return 0 if no change. return 1 if x change
 		optoValue[1]=digitalRead(optoSensorX2);
 		optoValue[2]=digitalRead(optoSensorY1);
 		optoValue[3]=digitalRead(optoSensorY2);
+		printw("\n the value of sensor 1 and 2 are:::%d\n%d",optoValue[0],optoValue[1]);
+		refresh();
+		while(getch()!= ERR)
+		{
+			delay(1);
+		}
 		return 0;
 	}
-	if(!checkX&&optoValue[0]!=digitalRead(optoSensorX1))
+	if(checkX&&optoValue[0]!=digitalRead(optoSensorX1))
 	{
 		optoValue[0]!=optoValue[0];
 		return 1;
 	}
-	else if(!checkX&&optoValue[1]!=digitalRead(optoSensorX2))
+	else if(checkX&&optoValue[1]!=digitalRead(optoSensorX2))
 	{
 		optoValue[1]!=optoValue[1];
 		return 1;
 	}
-	if(!checkY&&optoValue[2]!=digitalRead(optoSensorY1))
+	if(checkY&&optoValue[2]!=digitalRead(optoSensorY1))
 	{
 		optoValue[2]!=optoValue[2];
 		return -1;
 	}
-	else if(!checkY&&optoValue[3]!=digitalRead(optoSensorY2))
+	else if(checkY&&optoValue[3]!=digitalRead(optoSensorY2))
 	{
 		optoValue[3]!=optoValue[3];
 		return -1;
@@ -156,8 +162,7 @@ int didTick(int checkX,int checkY) //return 0 if no change. return 1 if x change
 	return 0;
 }
 int optoControl()
-{
-	clearScreen();
+{ clearScreen();
 	
 	mvprintw(3,4,"Press Enter when ready to start recording the opto sensor, or q to exit!");
 	//mvprintw(14,10,"Opto Sensor reading:%s\tTicks:%d",(!isOn1)?"Open!!":"Blocked!!!",ticks);
@@ -196,8 +201,10 @@ int optoControl()
 
 		while(!quit  && c == ERR)
 		{
-			int result = didTick(1,1);
-			safeDelay(1);
+			int result = didTick(1,0);     //@@@@NEED TO CHANGE THIS AFTER FINISH DEBUGING!!!
+
+			delay(1);
+//`		safeDelay(1);
 			c=getch();
 			if(result==0)
 				continue;
@@ -238,7 +245,8 @@ int optoControl()
 				refresh();
 				break;
 		}
-		safeDelay(10);
+		delay(10);
+//		safeDelay(10);
 		refresh();
 	}
 
