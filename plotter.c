@@ -670,32 +670,91 @@ void movexy(int Xdist, int Ydist)// note this is moving relative to where we are
 		bool foundY = false;
 		if(Xdist>10)    //need to go fowards 
 		{
-		power(motorXA,100);
-		power(motorXB,0);
+			power(motorXA,100);
+			power(motorXB,0);
 		}else if (Xdist<-10)  //need to go backword 
 		{
-		power(motorXA,0);
-		power(motorXB,100);
+			power(motorXA,0);
+			power(motorXB,100);
+		}else if(abs(posX/10-(posX+Xdist)/10)>0)
+		{
+			if(Xdist>0)
+				power(motorXA,50);
+			else
+				power(motorXB,50);
+			while(didTick(1,0)!=1)
+			{
+				safeDelay(1);
+			}
+			power(motorXA,0);
+			power(motorXB,0);
+			int moved;
+			if(Xdist>0)
+			{
+				moved = 10 - posX % 10;
+				posX  += moved;
+				Xdist -= moved;
+				//increment the posX for we moved the machine
+				//decrease the value that we still have to go 
+			}
+			else
+			{
+				moved = posX % 10;
+				moved = (moved == 0)?10:moved;
+				posX  -= moved;
+				Xdist += moved;
+			}
+			foundX = true;
+		
 		}else                //already at the correct x point
 		{
-		power(motorXA,0);
-		power(motorXB,0);
-		foundX = true;
+			power(motorXA,0);
+			power(motorXB,0);
+			foundX = true;
 		}
 		if(Ydist>10)
 		{                      //need to go fowards
-		power(motorYA,100);
-		power(motorYB,0);
+			power(motorYA,100);
+			power(motorYB,0);
 
 		}else if (Ydist<-10)  //need to go backwords
 		{
-		power(motorYA,0);
-		power(motorYB,100);
+			power(motorYA,0);
+			power(motorYB,100);
+		}else if(abs(posY/10-(posY+Ydist)/10)>0)
+		{
+			if(Ydist>0)
+				power(motorYA,50);
+			else
+				power(motorYB,50);
+			while(didTick(0,1)!=-1)
+			{
+				safeDelay(1);
+			}
+			power(motorYA,0);
+			power(motorYB,0);
+			int moved;
+			if(Ydist>0)
+			{
+				moved = 10 - posY % 10;
+				posY  += moved;
+				Ydist -= moved;
+				//increment the posX for we moved the machine
+				//decrease the value that we still have to go 
+			}
+			else
+			{
+				moved = posY % 10;
+				moved = (moved == 0)?10:moved;
+				posY  -= moved;
+				Ydist += moved;
+			}
+			foundY = true;
 		}else              //alrady at the correct pint
 		{
-		power(motorYA,0);
-		power(motorYB,0);
-		foundY = true;
+			power(motorYA,0);
+			power(motorYB,0);
+			foundY = true;
 		}
 		while(!foundX||!foundY)
 		{
@@ -768,7 +827,7 @@ void movexy(int Xdist, int Ydist)// note this is moving relative to where we are
 			}
 			power(motorXA,0);
 			power(motorXB,0);
-			if(Ydist>0)
+			if(Xdist>0)
 			{
 				posX  += 10;
 				Xdist -= 10;
@@ -807,26 +866,27 @@ void movexy(int Xdist, int Ydist)// note this is moving relative to where we are
 			}
 					
 		}
-		double Xtime, Ytime;                             ///////@@@@@@@@@@need to include conditional if posX and posY are not even factor of 10
-		if(Xdist>0)
-		{                   //becues timing[0] values get bigger as the index increase this is positive
-			Xtime = (2)*Xdist*(timing[(posX)/10+1][0] - timing[posX/10][0]);
+		double XtimetoGo, YtimetoGo;                            
+		if(Xdist>0)                                                                                     //0 1 2 3 4 5 6 7 8 9 11 12 13
+													//	      |posX=2     |target=8 xdist=6
+		{                   //becues timing[0] values get bigger as the index increase this is positive           
+			XtimetoGo = (2)*Xdist*(timing[(posX)/10+1][0] - timing[posX/10][0]);
 		}             //becaues we are runing at 50% power and becues it is a fraction of a full tick 
 		else 
 		{                   //becues timing[1] vlues get bigger as the index decrses this is positive
-			Xtime = (-2)*Xdist*(timing[(posX)/10-1][1]- timing[posX/10][1]);
+			XtimetoGo = (-2)*Xdist*(timing[(posX)/10-1][1]- timing[posX/10][1]);
 		}
 		if(Ydist>0)
 		{
-			Ytime = (2)*Ydist*(timing[(posY)/10+1][2] - timing[posY/10][2]);
+			YtimetoGo = (2)*Ydist*(timing[(posY)/10+1][2] - timing[posY/10][2]);
 		}
 		else 
 		{
-			Ytime = (-2)*Ydist*(timing[(posY)/10-1][3]- timing[posY/10][3]);
+			YtimetoGo = (-2)*Ydist*(timing[(posY)/10-1][3]- timing[posY/10][3]);
 		}
-		Xtime = Xtime * (1000000000/CLOCKS_PER_SEC);//turn it to nano 
-		Ytime = Ytime * (1000000000/CLOCKS_PER_SEC);//turn it to nano
-		if(Xtime<Ytime) //do both at same time and then finish the y change
+		XtimetoGo = XtimetoGo * (1000000000/CLOCKS_PER_SEC);//turn it to nano 
+		YtimetoGo = YtimetoGo * (1000000000/CLOCKS_PER_SEC);//turn it to nano
+		if(XtimetoGo<YtimetoGo) //do both at same time and then finish the y change
 		{
 			if(Xdist>0)
 				power(motorXA,50);
@@ -837,10 +897,10 @@ void movexy(int Xdist, int Ydist)// note this is moving relative to where we are
 			else 
 				power(motorYB,50);
 
-			nanosleep((const struct timespec[]){{0,Xtime }}, NULL);
+			nanosleep((const struct timespec[]){{0,XtimetoGo }}, NULL);
 			power(motorXA,0);
 			power(motorXB,0);
-			nanosleep((const struct timespec[]){{0,Ytime-Xtime }}, NULL);
+			nanosleep((const struct timespec[]){{0,YtimetoGo-XtimetoGo }}, NULL);
 			power(motorYA,0);
 			power(motorYB,0);
 		}
@@ -855,10 +915,10 @@ void movexy(int Xdist, int Ydist)// note this is moving relative to where we are
 			else 
 				power(motorYB,50);
 
-			nanosleep((const struct timespec[]){{0,Ytime }}, NULL);
+			nanosleep((const struct timespec[]){{0,YtimetoGo }}, NULL);
 			power(motorYA,0);
 			power(motorYB,0);
-			nanosleep((const struct timespec[]){{0,Xtime-Ytime }}, NULL);
+			nanosleep((const struct timespec[]){{0,XtimetoGo-YtimetoGo }}, NULL);
 			power(motorXA,0);
 			power(motorXB,0);
 		}
@@ -871,24 +931,52 @@ void movexy(int Xdist, int Ydist)// note this is moving relative to where we are
 	/// lets do some calulations to see the rates we need to go inorder for reaching the end point at the exact right time
 	double Xtime = 0.0;
 	double Ytime = 0.0;
-	if(Xdist>10) //going foward x wise
+	if(Xdist>0) //going foward x wise
 	{                                                                    //                                             |..............|
-		Xtime += timing[posX/10+Xdist/10][0]-timing[posX/10][0];//gets the bigest chuck of the time slot this gets 0.0  x   1.0   2.0  target  3.0
+		Xtime += timing[(posX+Xdist)/10][0]-timing[posX/10][0];//gets the bigest chuck of the time slot this gets 0.0  x   1.0   2.0  target  3.0
 						                                                                          //   0.3             2.8
-		Xtime += ((Xdist+posX)%10)*(timing[posX/10+Xdist/10+1][0]-timing[posX/10+Xdist/10][0]); 
+		Xtime += (((double)((Xdist+posX)%10))/10)*(timing[(posX+Xdist)/10+1][0]-timing[(posX+Xdist)/10][0]); 
 												// get the last part of the time interbol  |....| 
-		Xtime -= (posX%10)*(timing[posX/10+1][0] - timing[posX/10][0]);	//subtract the overshoot we had             |---| 
+		Xtime -= (((double)(posX%10))/10)*(timing[posX/10+1][0] - timing[posX/10][0]);	//subtract the overshoot we had             |---| 
 	}
-	else if (Xdist < -10) //going backwords x wise
+	else if (Xdist < 0) //going backwords x wise
 	{ 														//            |.....|
-		Xtime += timing[posX/10+Xdist/10][1]-timing[posX/10][1];//gets the bigest chuck of the time slot this gets 0.0 target 1.0   2.0  x  3.0
+		Xtime += timing[(posX+Xdist)/10][1]-timing[posX/10][1];//gets the bigest chuck of the time slot this gets 0.0 target 1.0   2.0  x  3.0
+		
+		Xtime += (((double)(posX%10))/10)*(timing[posX/10][1]-timing[posX/10+1][1]); 	  // get the last part of the time interbol  |..| 
+		
+		Xtime -= (((double)((posX+Xdist)%10))/10)*(timing[(posX+Xdist)/10][1]-timing[(posX+Xdist)/10+1][1]);
+				}
+	else //we are within 10 of where we need to go. tread carefully
+	{
+		Xtime = 0.0;
+	}
+	if(Ydist>0) //going foward Y wise
+	{                                                                    //                                             |..............|
+		Ytime += timing[(posY+Ydist)/10][2]-timing[posY/10][2];//gets the bigest chuck of the time slot this gets 0.0  x   1.0   2.0  target  3.0
 						                                                                          //   0.3             2.8
-		Xtime += (posX%10)*(timing[posX/10][1]-timing[posX/10+1][1]); 			  // get the last part of the time interbol  |..| 
+		Ytime += (((double)((Ydist+posY)%10))/10)*(timing[(posY+Ydist)/10+1][2]-timing[(posY+Ydist)/10][2]); 
+												// get the last part of the time interbol  |....| 
+		Ytime -= (((double)(posY%10))/10)*(timing[posY/10+1][2] - timing[posY/10][2]);	//subtract the overshoot we had             |---| 
+	}
+	else if (Ydist < 0) //going backwords Y wise
+	{ 														//  |++++++++++++++++|
+		Ytime += timing[(posY+Ydist)/10][3]-timing[posY/10][3];//gets the bigest chuck of the time slot this gets 0.0 target 1.0   2.0  x  3.0
+		
+		Ytime += (((double)(posY%10))/10)*(timing[posY/10][3]-timing[posY/10+1][3]); 	  // get the last part of the time interbol  |..| 
+		
+		Ytime -= (((double)((posY+Ydist)%10))/10)*(timing[(posY+Ydist)/10][3]-timing[(posY+Ydist)/10+1][3]);
+													//this subtracts   |----|
+	//redisgingting part
+		//Ytime += timing[posY/10+Ydist/10][3]-timing[posY/10][3];//gets the bigest chuck of the time slot this gets 0.0 target 1.0   2.0  x  3.0
+						                                                                          //   0.3             2.8
+	//jj	Ytime += (((double)(posY%10))/10)*(timing[posY/10][3]-timing[posY/10+1][3]); 			  // get the last part of the time interbol  |..| 
 
-		Xtime += (10-(Xdist+posX)%10)*(timing[(Xdist+posX)/10][1]-timing[(Xdist/10+posX/10)][1]);// get the first part  |.....| 
+	//	Ytime += (((double)(10-(Ydist+posY)%10))/10)*(timing[(Ydist+posY)/10][3]-timing[((Ydist+posY)/10)+1][3]);// get the first part  |.....| 
 	}
 	else //we are within 10 of where we need to go. tread carefully
 	{
+		Ytime = 0.0;
 	}
 }
 void initalize()
