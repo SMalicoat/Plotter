@@ -20,7 +20,7 @@
 #define optoSensorX1 1
 #define optoSensorX2 7
 #define optoSensorY1 4 
-#define optoSensorY2 8
+#define optoSensorY2 5
 #define motorXA 16
 #define motorXB 16
 #define motorYA 15
