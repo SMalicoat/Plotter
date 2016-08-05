@@ -620,7 +620,7 @@ int safeDelay(int duration)
 //		ungetch(c);      //i dont think i need this line
 		delay(1);
 	}
-	while(((clock() - before )*1000/CLOCKS_PER_SEC)<duration);
+	while(((clock() - before )*(1000/CLOCKS_PER_SEC))<duration);
 //	ungetch(c);
 	return 0;
 }
@@ -810,20 +810,60 @@ void movexy(int Xdist, int Ydist)// note this is moving relative to where we are
 		double Xtime, Ytime;
 		if(Xdist>0)
 		{                   //becues timing[0] values get bigger as the index increase this is positive
-			Xtime = (.5)*Xdist*(timing[(posX)/10+1][0] - timing[posX/10][0]);
-		}             //becaues we are runing at 50% power and becues it is a fraction of that time now
+			Xtime = (2)*Xdist*(timing[(posX)/10+1][0] - timing[posX/10][0]);
+		}             //becaues we are runing at 50% power and becues it is a fraction of a full tick 
 		else 
 		{                   //becues timing[1] vlues get bigger as the index decrses this is positive
-			Xtime = (-.5)*Xdist*(timing[(posX)/10-1][1]- timing[posX/10][1]);
+			Xtime = (-2)*Xdist*(timing[(posX)/10-1][1]- timing[posX/10][1]);
 		}
 		if(Ydist>0)
 		{
-			Ytime = (.5)*Ydist*(timing[(posY)/10+1][2] - timing[posY/10][2]);
+			Ytime = (2)*Ydist*(timing[(posY)/10+1][2] - timing[posY/10][2]);
 		}
 		else 
 		{
-			Ytime = (-.5)*Ydist*(timing[(posY)/10-1][3]- timing[posY/10][3]);
+			Ytime = (-2)*Ydist*(timing[(posY)/10-1][3]- timing[posY/10][3]);
 		}
+		Xtime = Xtime * (1000000000/CLOCKS_PER_SEC);//turn it to nano 
+		Ytime = Ytime * (1000000000/CLOCKS_PER_SEC);//turn it to nano
+		if(Xtime<Ytime) //do both at same time and then finish the y change
+		{
+			if(Xdist>0)
+				power(motorXA,50);
+			else
+				power(motorXB,50);
+			if(Ydist>0)
+				power(motorYA,50);
+			else 
+				power(motorYB,50);
+
+			nanosleep((const struct timespec[]){{0,Xtime }}, NULL);
+			power(motorXA,0);
+			power(motorXB,0);
+			nanosleep((const struct timespec[]){{0,Ytime-Xtime }}, NULL);
+			power(motorYA,0);
+			power(motorYB,0);
+		}
+		else
+		{
+			if(Xdist>0)
+				power(motorXA,50);
+			else
+				power(motorXB,50);
+			if(Ydist>0)
+				power(motorYA,50);
+			else 
+				power(motorYB,50);
+
+			nanosleep((const struct timespec[]){{0,Xtime }}, NULL);
+			power(motorXA,0);
+			power(motorXB,0);
+			nanosleep((const struct timespec[]){{0,Ytime-Xtime }}, NULL);
+			power(motorYA,0);
+			power(motorYB,0);
+		}
+		posX += Xdist;
+		posY += Ydist;
 		
 	}
 }
