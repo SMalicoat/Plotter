@@ -668,11 +668,11 @@ void movexy(int Xdist, int Ydist)// note this is moving relative to where we are
 	{
 		bool foundX = false;
 		bool foundY = false;
-		if(Xdist<10)    //need to go backwords
+		if(Xdist>10)    //need to go fowards 
 		{
 		power(motorXA,100);
 		power(motorXB,0);
-		}else if (Xdist>10)  //need to go fowards
+		}else if (Xdist<-10)  //need to go backword 
 		{
 		power(motorXA,0);
 		power(motorXB,100);
@@ -682,12 +682,12 @@ void movexy(int Xdist, int Ydist)// note this is moving relative to where we are
 		power(motorXB,0);
 		foundX = true;
 		}
-		if(Ydist<10)
-		{                      //need to go backwords
+		if(Ydist>10)
+		{                      //need to go fowards
 		power(motorYA,100);
 		power(motorYB,0);
 
-		}else if (Ydist>10)  //need to go fowards
+		}else if (Ydist<-10)  //need to go backwords
 		{
 		power(motorYA,0);
 		power(motorYB,100);
@@ -807,7 +807,7 @@ void movexy(int Xdist, int Ydist)// note this is moving relative to where we are
 			}
 					
 		}
-		double Xtime, Ytime;
+		double Xtime, Ytime;                             ///////@@@@@@@@@@need to include conditional if posX and posY are not even factor of 10
 		if(Xdist>0)
 		{                   //becues timing[0] values get bigger as the index increase this is positive
 			Xtime = (2)*Xdist*(timing[(posX)/10+1][0] - timing[posX/10][0]);
@@ -855,16 +855,40 @@ void movexy(int Xdist, int Ydist)// note this is moving relative to where we are
 			else 
 				power(motorYB,50);
 
-			nanosleep((const struct timespec[]){{0,Xtime }}, NULL);
-			power(motorXA,0);
-			power(motorXB,0);
-			nanosleep((const struct timespec[]){{0,Ytime-Xtime }}, NULL);
+			nanosleep((const struct timespec[]){{0,Ytime }}, NULL);
 			power(motorYA,0);
 			power(motorYB,0);
+			nanosleep((const struct timespec[]){{0,Xtime-Ytime }}, NULL);
+			power(motorXA,0);
+			power(motorXB,0);
 		}
 		posX += Xdist;
 		posY += Ydist;
+		return;
 		
+	}
+	//so now the pen is down and we need to move very percisly...
+	/// lets do some calulations to see the rates we need to go inorder for reaching the end point at the exact right time
+	double Xtime = 0.0;
+	double Ytime = 0.0;
+	if(Xdist>10) //going foward x wise
+	{                                                                    //                                             |..............|
+		Xtime += timing[posX/10+Xdist/10][0]-timing[posX/10][0];//gets the bigest chuck of the time slot this gets 0.0  x   1.0   2.0  target  3.0
+						                                                                          //   0.3             2.8
+		Xtime += ((Xdist+posX)%10)*(timing[posX/10+Xdist/10+1][0]-timing[posX/10+Xdist/10][0]); 
+												// get the last part of the time interbol  |....| 
+		Xtime -= (posX%10)*(timing[posX/10+1][0] - timing[posX/10][0]);	//subtract the overshoot we had             |---| 
+	}
+	else if (Xdist < -10) //going backwords x wise
+	{ 														//            |.....|
+		Xtime += timing[posX/10+Xdist/10][1]-timing[posX/10][1];//gets the bigest chuck of the time slot this gets 0.0 target 1.0   2.0  x  3.0
+						                                                                          //   0.3             2.8
+		Xtime += (posX%10)*(timing[posX/10][1]-timing[posX/10+1][1]); 			  // get the last part of the time interbol  |..| 
+
+		Xtime += (10-(Xdist+posX)%10)*(timing[(Xdist+posX)/10][1]-timing[(Xdist/10+posX/10)][1]);// get the first part  |.....| 
+	}
+	else //we are within 10 of where we need to go. tread carefully
+	{
 	}
 }
 void initalize()
@@ -949,6 +973,8 @@ void initalize()
 		posX+=10;
 		safeDelay(1);
 	}
+	timing[(posX)/10+1][0] = 0;
+	timing[(posX)/10+1][1] = 0;
 	power(motorXA,0);
 	printw("Going back down");
 	power(motorXB,100);
@@ -970,10 +996,12 @@ void initalize()
 	{
 		if(didTick(1,0)==0)
 			continue;
-		timing[posY/10][3] = (long) clock();	
+		timing[posY/10][2] = (long) clock();	
 		posY+=10;
 		safeDelay(1);
 	}
+	timing[(posY)/10+1][2] = 0;
+	timing[(posY)/10+1][3] = 0;
 	power(motorYA,0);
 	power(motorYB,100);
 	printw("Going back down");
@@ -981,7 +1009,7 @@ void initalize()
 	{
 		if(didTick(0,1)==0)
 			continue;
-		timing[posY/10][4] = (long) clock();	
+		timing[posY/10][3] = (long) clock();	
 		posY-=10;
 		safeDelay(1);
 	}
