@@ -19,7 +19,7 @@
 #define optoSensorX1 4 
 #define optoSensorX2 5
 #define optoSensorY1 6
-#define optoSensorY2 18
+#define optoSensorY2 20 
 #define motorXA 7 
 #define motorXB 0 
 #define motorYA 2 
@@ -1024,7 +1024,7 @@ void movexy(int Xdist, int Ydist)// note this is moving relative to where we are
 				Xdist += moved;
 			}
 		//	foundX = true;
-			while(1/*!foundX||!foundY*/)
+	/*		while(!foundX||!foundY)
 			{
 				int result = didTick(!foundX,!foundY);		
 				int moved;
@@ -1057,6 +1057,7 @@ void movexy(int Xdist, int Ydist)// note this is moving relative to where we are
 				}
 			
 			}
+			*/
 		}	
 	}
 
