@@ -14,21 +14,21 @@
 #define WIDTH 30
 #define HEIGHT 10 
 
-#define DEBUG 0
+#define DEBUG 1
 #define STOPPULSE 150   //all of the pin numbers are wiringPI standard!!
 #define optoSensorX1 4 
 #define optoSensorX2 5
-#define optoSensorY1 6
-#define optoSensorY2 20 
+#define optoSensorY1 27 
+#define optoSensorY2 28 
 #define motorXA 7 
 #define motorXB 0 
 #define motorYA 2 
 #define motorYB 3 
 #define penServo 1   
-#define Xstop 17 
+#define Xstop 24 
 #define Ystop 19      //the pin that the touch sensor is located on tellign the y asix to stop at 0
 
-#define MAXSIZEX 120
+#define MAXSIZEX 100
 #define MAXSIZEY 120
 
 double penRateX = 0.9;
@@ -61,7 +61,7 @@ void getMaxsizeofDIR(char * dir,int *files,int *length);
 int optoControl();
 int xyControl();
 void initalize();
-int safeDelay(int duration);
+int safeDelay(double duration);
 void allSTOP();
 int didTick(int checkX,int checkY);
 void power(int pin,int percent);
@@ -76,15 +76,16 @@ int main()
 	while(!quit)
 		{
 		clearScreen();
-		char * choices[] = {"Plot File","Manual Control","Servo Control","Opto Sensor Control","X&Y Control","Exit"};
+		char * choices[] = {"Plot File","Manual Control","Servo Control","Opto Sensor Control","X&Y Control","initalize","Exit"};
 		char *description[] = {
 		"You select a file to plot and will plot the file on the plotter",
 		"Will give you full control over the plotter for debuging or demenstration",
 		"Lets you enter and test different duration of pulses sent to the servo for fine tuning and debugging",
 		"Will read in the togleing of the opto sensor for debuging",
 		"Will let you have control how much to move in x and y by ticks more precisly",
+		"Test initalization procedure",
 		"Will exit the prgram"};
-		int result = menus("Hello and Welcome to my creation please sleect a mode", choices,description,6,20);
+		int result = menus("Hello and Welcome to my creation please sleect a mode", choices,description,7,20);
 		clearScreen();
 		switch (result)
 		{
@@ -109,8 +110,13 @@ int main()
 			case 5:
 				xyControl();
 				break;
-			case 6:
+			case 6: 
+				initalize();
+				break;
+			
 			case -1:
+			default:
+				system("reset");
 				return 0; 
 				break;
 
@@ -190,8 +196,8 @@ int optoControl()
 		while(!quit  && c == ERR)
 		{
 			int result = didTick(1,1); 	
-			delay(1);
-//`		safeDelay(1);
+//			delay(1);
+  			safeDelay(1);
 			c=getch();
 			if(result==0)
 				continue;
@@ -202,7 +208,7 @@ int optoControl()
 		
 			move(14,0);
 			clrtoeol();
-			mvprintw(14,10,"\tX-Ticks:%d\tY-Ticks:%d",xticks,yticks);
+			mvprintw(14,10,"\tX-Ticks:%d\tY-Ticks:%d\tXSTOP:%i",xticks,yticks,digitalRead(Xstop));
 			refresh();
 		}	
 		move(20,0);
@@ -232,8 +238,8 @@ int optoControl()
 				refresh();
 				break;
 		}
-		delay(10);
-//		safeDelay(10);
+//		delay(10);
+		safeDelay(10);
 		refresh();
 	}
 
@@ -603,16 +609,21 @@ int plot()
 
 //			//		break;
 //	}
-int safeDelay(int duration)
+int safeDelay(double duration)
 {
+	mvprintw(22,0,"in safe Delay with duration of:%i",duration);
 	if(quit)
 		return 1;
+	delay(duration);
+	return 1;
 	nodelay(stdscr,1);
 	clock_t before = clock();
 	//int c = getch();
 	do
 	{
+		
 		int newc = getch();
+		printw("newc is:%i",newc);
 		if(newc==27&&getch()==-1)
 		{
 			allSTOP();
@@ -622,8 +633,15 @@ int safeDelay(int duration)
 		
 //		ungetch(c);      //i dont think i need this line
 		delay(1);
+/*		printw("\t done with that delay now we hit the condidtional:\nclock()-before)*(1000/CLOCKS_PER_SEC):%d and duration:%d",((double)((clock() - before )*(1000/CLOCKS_PER_SEC))),duration);
+		while(getch()==-1)
+		{
+		delay(1);
+		}
+*/	//	printw("the condition should evaluate to:%s",(((double)((clock() - before )*(1000/CLOCKS_PER_SEC)))<duration)?"true":"false");
 	}
-	while(((clock() - before )*(1000/CLOCKS_PER_SEC))<duration);
+	while(((double)((clock() - before )*(1000/CLOCKS_PER_SEC)))>duration);
+	//printw("\n\nWE GOT OUT!!");
 //	ungetch(c);
 	return 0;
 }
@@ -641,6 +659,9 @@ void allSTOP()
 }
 void power(int pin,int percent)
 {
+
+	if(DEBUG)
+		percent = percent/ 2;
 	char output[100];
 	sprintf(output,"echo %i=%i%% > /dev/servoblaster",pin,percent);
 	system(output);
@@ -669,7 +690,7 @@ void movexy(int Xdist, int Ydist)// note this is moving relative to where we are
 	if(Xdist==0&&Ydist==0)
 		return;
 
-	if(penUp)
+	if(DEBUG||penUp)
 	{
 		bool foundX = false;
 		bool foundY = false;
@@ -1076,7 +1097,8 @@ void initalize()
 	power(motorYB,0);
 	clearScreen();
 	keypad(stdscr,TRUE);
-	while(!quit)
+	bool stop = false;
+	while(!quit&&!stop)
 	{
 		mvprintw(4,10,"Initalizing ....");
 		mvprintw(5,10,"Please use Page Up and Page Down Arrows to move the pen to just touching the page,When centered hit 'q'");
@@ -1096,6 +1118,8 @@ void initalize()
 			case 'Q':
 				pen(50);
 				safeDelay(200);
+				stop = true;
+				break;
 			defaut:
 				break;
 		}
@@ -1104,7 +1128,10 @@ void initalize()
 	penMove(1);
 	move(5,0);
 	clrtoeol();
+	nodelay(stdscr,0);
+
 	mvprintw(5,10,"Finding position 0 on X axis...");
+	getch();
 	refresh();
 	if(digitalRead(Xstop))
 	{
@@ -1113,14 +1140,19 @@ void initalize()
 		power(motorXA,0);
 	}
 	clrtoeol();
-	mvprintw(5,10,"Finding position 0 on Y axis...");
+	mvprintw(5,10,"Finding position 0 on X axis...");
+	getch();
 	refresh();
-	power(motorXB,100);
+	power(motorXB,50);
 	while(!quit&&!digitalRead(Xstop))
 		safeDelay(1);
+
 	posX=0;
 	power(motorXB,0);
-	if(digitalRead(Ystop))
+	printw("just found 0 on the x!");
+	getch();
+	
+/*	if(digitalRead(Ystop))
 	{
 		power(motorYA,100);	
 		safeDelay(500);
@@ -1130,10 +1162,11 @@ void initalize()
 	while(!quit&&!digitalRead(Ystop))
 		safeDelay(1);
 	posY=0;
-	power(motorYB,0);
+	power(motorYB,0);*/
 	clock_t before = clock();
 	clrtoeol();
 	mvprintw(5,10,"Seting up timing increment on the X axis...");
+	getch();
 	refresh();
 	power(motorXA,100);
 	while(!quit&&posX/10<=MAXSIZEX)
@@ -1143,11 +1176,13 @@ void initalize()
 		timing[posX/10][0] = (long) clock();	
 		posX+=10;
 		safeDelay(1);
+		mvprintw(6,13,"Ticked again: posX = %i");
 	}
 	timing[(posX)/10+1][0] = 0;
 	timing[(posX)/10+1][1] = 0;
 	power(motorXA,0);
 	printw("Going back down");
+	getch();
 	power(motorXB,100);
 	while(!quit&&posX/10>=0)
 	{
@@ -1158,6 +1193,10 @@ void initalize()
 		safeDelay(1);
 	}
 	clrtoeol();
+	printw("DONE SETING UP TIMING FOR THE X AXIS");
+	allSTOP();
+	if(DEBUG)
+		return;
 	mvprintw(5,10,"Seting up timing increment on the Y axis...");
 	refresh();
 	power(motorXB,0);
@@ -1308,12 +1347,19 @@ int manualControl()
 			case KEY_UP:
 				if(DEBUG)
 				mvprintw(20,3,"Up arrrow pressed!");
-				movex(50);
+				power(motorXA,100);
+				power(motorXB,0);
+				delay(20);
+				power(motorXA,0);
+			//	movex(50);
 				break;
 			case KEY_DOWN:
 				if(DEBUG)
 				mvprintw(20,3,"Down arrrow pressed!");
-				movex(-50);
+				power(motorXB,100);
+				power(motorXA,0);
+				delay(20);
+				power(motorXB,0);
 				break;
 			case 'q':
 			case 'Q':
@@ -1324,12 +1370,18 @@ int manualControl()
 			case KEY_LEFT:
 				if(DEBUG)
 				mvprintw(20,3,"Left arrrow pressed!");
-				movey(-50);
+				power(motorYB,100);
+				power(motorYA,0);
+				delay(20);
+				power(motorYB,0);
 				break;
 			case KEY_RIGHT:
 				if(DEBUG)
 				mvprintw(20,3,"Right arrrow pressed!");
-				movey(50);
+				power(motorYA,100);
+				power(motorYB,0);
+				delay(20);
+				power(motorYA,0);
 				break;
 			case KEY_NPAGE:
 				if(DEBUG)
