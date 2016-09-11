@@ -12,7 +12,6 @@
 
 #include <stdio.h>
 #include <ncurses.h>
-#include <ncurses.h>
 #include <wiringPi.h>
 #include <string.h>
 #include <stdlib.h>
@@ -20,17 +19,8 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <time.h>
-
-#include <stdio.h>
-#include <termios.h>
-#include <sys/ioctl.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 #include <sys/time.h>
-#include <dirent.h>
 #include <math.h>
-#include <wiringPi.h>
 #include <unistd.h>
 
 #define WIDTH 30
@@ -98,7 +88,7 @@ void PrintRow(char character, int y);
 void ErrorText(char *message);
 void PrintMenue_01(char * PlotFile, double scale, double width, double height, long MoveLength, int plotterMode);
 char *PrintMenue_02(int StartRow, int selected, int plotterMode);
-void PrintMenue_03(char *FullFileName, long NumberOfLines, long CurrentLine, long CurrentX, long CurrentY, long StartTime);
+void PrintMenue_03(char *FullFileName, long NumberOfLines, long CurrentLine, long CurrentX, long CurrentY, long StartTime,int Scale);
 void MoveToSwitch(int X, int Y);
 void SetDrops(int Cyan, int Magenta, int Yellow);
 void MoveServo(int PulseWidth);
@@ -154,7 +144,7 @@ long                xMin = 1000000, xMax = -1000000;
 long                yMin = 1000000, yMax = -1000000;
 long                coordinateCount = 0;
 long                coordinatePlot = 0;
-long                currentPlotX = 0, currentPlotY = 0, currentPlotDown = 0;
+long                currentPlotX = 0, currentPlotY = 0, currentPlotDown = 1;
 long                xNow = 0, yNow = 0, zNow = 0;
 char                *pEnd;
 FILE                *PlotFile;
@@ -259,7 +249,7 @@ MessageY = MaxRows-3;
 						currentPlotX = 0;
 						currentPlotY = 0;        
 						PlotStartTime = time(0);
-						PrintMenue_03(FullFileName, coordinateCount, 0, 0, 0, PlotStartTime);
+						PrintMenue_03(FullFileName, coordinateCount, 0, 0, 0, PlotStartTime,Scale);
 						coordinatePlot = 0;
 						stopPlot = 0;
 						if(currentPlotDown == 1){
@@ -302,7 +292,7 @@ MessageY = MaxRows-3;
 							  if(strlen(TextLine) > 0){
 								yNow = ((yMax - strtol(TextLine, &pEnd, 10)) - yMin) * 0.33333 * Scale;//Flip around y-axis
 								coordinatePlot++;
-								PrintMenue_03(FullFileName, coordinateCount, coordinatePlot, xNow, yNow, PlotStartTime);
+								PrintMenue_03(FullFileName, coordinateCount, coordinatePlot, xNow, yNow, PlotStartTime, Scale);
 								if(stopPlot == 0){
 								  stopPlot =0;
 								  moveXY(xNow - currentPlotX, yNow - currentPlotY);
@@ -362,7 +352,7 @@ MessageY = MaxRows-3;
 											  
 						  currentPlotDown = 0;
 						}
-						PrintMenue_03(FullFileName, coordinateCount, coordinatePlot, 0, 0, PlotStartTime);
+						PrintMenue_03(FullFileName, coordinateCount, coordinatePlot, 0, 0, PlotStartTime,Scale);
 						moveXY(-currentPlotX, -currentPlotY);
 						currentPlotX = 0;
 						currentPlotY = 0;
@@ -1895,7 +1885,7 @@ char *PrintMenue_02(int StartRow, int selected, int plotterMode){
 
 
 //+++++++++++++++++++++++++ PrintMenue_03 ++++++++++++++++++++++++++++++
-void PrintMenue_03(char *FullFileName, long NumberOfLines, long CurrentLine, long CurrentX, long CurrentY, long StartTime){
+void PrintMenue_03(char *FullFileName, long NumberOfLines, long CurrentLine, long CurrentX, long CurrentY, long StartTime,int Scale){
   char TextLine[300];
   long CurrentTime, ProcessHours = 0, ProcessMinutes = 0, ProcessSeconds = 0;
   
@@ -1919,11 +1909,13 @@ void PrintMenue_03(char *FullFileName, long NumberOfLines, long CurrentLine, lon
    sprintf(TextLine, "File name: %s", FullFileName);
    MessageText(TextLine, 10, 3, 0);
    sprintf(TextLine, "Number of lines: %ld", NumberOfLines);
-   MessageText(TextLine, 10, 4, 0);
-   sprintf(TextLine, "Current Position(%ld): X = %ld, Y = %ld     ", CurrentLine, CurrentX, CurrentY);
    MessageText(TextLine, 10, 5, 0);
-   sprintf(TextLine, "Process time: %02ld:%02ld:%02ld", ProcessHours, ProcessMinutes, ProcessSeconds);
+   sprintf(TextLine, "Current Position(%ld): X = %ld, Y = %ld     ", CurrentLine, CurrentX, CurrentY);
    MessageText(TextLine, 10, 6, 0);
+   sprintf(TextLine, "Process time: %02ld:%02ld:%02ld", ProcessHours, ProcessMinutes, ProcessSeconds);
+   MessageText(TextLine, 10, 7, 0);
+   sprintf(TextLine, "Scale Value: %ld",Scale);
+   MessageText(TextLine, 10, 4, 0);
      
 
 }
