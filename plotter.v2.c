@@ -3924,7 +3924,7 @@ int CalculatePlotter(long moveX, long moveY, long stepPause){
     if(moveY < 0){
       for(i = 0; i < -moveY; i++){
          MakeStepY(-1, stepPause);
-      }
+      }sl
     }
   }
   if(moveY == 0){
