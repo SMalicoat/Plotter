@@ -233,7 +233,7 @@ MessageY = MaxRows-3;
 				
 					char dir[1024];
 					getcwd(dir,sizeof(dir));
-					MessageText("3 seconds until plotting starts !!!!!!!!!!!!!!!!!", 1, 20, 0);
+					MessageText("3 seconds until plotting starts !!!!!!!!!!!!!!!!!", 1, 2, 0);
 					delay(3000);
 					if((PlotFile=chooseFile(dir))==NULL){
 						sprintf(TextLine, "Can't open file '%s'!\n", FullFileName);
@@ -1382,7 +1382,8 @@ void MessageText(char *message, int x, int y, int alignment){
   }
   strcat(TextLine, message);
   
-  printw("%s\n", TextLine);
+  mvprintw(x,y,"%s\n", TextLine);
+  refresh();
 }
 //-------------------------- End MessageText ---------------------------
 
