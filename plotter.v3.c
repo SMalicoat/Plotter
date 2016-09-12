@@ -60,7 +60,7 @@ int menus(char* title,char * choices[], char * description[],int n_choices,int w
 int manualControl();
 void movex(int duration);
 void movey(int duration);
-void movexy(int Xdist,int Ydist);
+void moveXY(int Xdist,int Ydist);
 void pen(int steps);
 void penMove(bool goUp);
 int servoControl();
@@ -79,10 +79,8 @@ void power(int pin,int percent);
 
 
 void sleepMs(long MilliSeconds);
-int gotoxy(int x, int y);
 void clrscr(int StartRow, int EndRow);
 int kbhit(void);
-int getch();
 void MessageText(char *message, int x, int y, int alignment);
 void PrintRow(char character, int y);
 void ErrorText(char *message);
@@ -121,7 +119,7 @@ bool optoValue[4];
 int config = false;
 double penAffect = -1;
 long timing[(MAXSIZEX>MAXSIZEY)?MAXSIZEX+2:MAXSIZEY+2][4];
-int main(int argc, char **argv){
+int main(int argc, char **argv)
 {
 int                 ADCvalue01 = 0;
 int                 StepSpeed = 100;  //Stepping speed (smaler value = faster)
@@ -154,8 +152,6 @@ double              PicWidth = 0.0;
 double              PicHeight = 0.0;
 long                MoveLength = 100;
 long                OldMoveLength = 200;
-struct timeval      StartTime, EndTime;
-struct winsize      terminal;
 long                PlotStartTime = 0;
 int                 MoveFinished = 0;
 long                stepPause = 5000;
@@ -226,7 +222,7 @@ MessageY = MaxRows-3;
 		
 		switch (result)
 		{
-			case 1:
+			case 1:  ;
 			
 			/*	FILE * fp;
 				char * line = NULL; 
@@ -305,7 +301,7 @@ MessageY = MaxRows-3;
 								else{
 								  if(currentPlotDown == 1){
 									if(plotterMode == 1){
-									  penMove(1)
+									  penMove(1);
 									}
 													   
 									currentPlotDown = 0;
@@ -343,7 +339,7 @@ MessageY = MaxRows-3;
 							TextLine[1] = '\0';
 							ReadState = 1;
 						  }
-						}//while(!(feof(PlotFile)) && stopPlot == 0){
+						}
 						fclose(PlotFile);
 						if(currentPlotDown == 1){
 						  
@@ -717,7 +713,7 @@ int xyControl()
 		refresh();
 		posX +=Xdist;
 		posY +=Ydist;
-		movexy(Xdist,Ydist);
+		moveXY(Xdist,Ydist);
 	}
 
 }
@@ -774,11 +770,11 @@ void power(int pin,int percent)
 }
 void movex(int Xdist)
 {
-	movexy(Xdist,0);
+	moveXY(Xdist,0);
 }
 void movey(int Ydist)
 {
-	movexy(0,Ydist);
+	moveXY(0,Ydist);
 }
 void moveXY(int Xdist, int Ydist)
 {
@@ -787,7 +783,7 @@ void moveXY(int Xdist, int Ydist)
   int i = 0;
   unsigned char reverseX = 0, reverseY = 0;
   
-  sprintf(TextLine, "Moving X: %ld, Moving Y: %ld", moveX, moveY);
+  sprintf(TextLine, "Moving X: %ld, Moving Y: %ld", Xdist, Ydist);
   MessageText(TextLine, MessageX, MessageY, 0);
 
 	if(posX==-1||posY==-1)
@@ -1026,387 +1022,7 @@ void initalize()
 	power(motorYB,0);
 	allSTOP();
 }
-  char TextLine[1000] = "";
-  long  tempX = 0, tempY = 0;
-  int i = 0;
-  unsigned char reverseX = 0, reverseY = 0;
-  
-  sprintf(TextLine, "Moving X: %ld, Moving Y: %ld", moveX, moveY);
-  MessageText(TextLine, MessageX, MessageY, 0);
 
-	if(posX==-1||posY==-1)
-		initalize();	
-
-	if(posX+Xdist>MAXSIZEX)              //make sure we dont go out of bounds too high
-		Xdist = MAXSIZEX-posX;
-	if(posX+Xdist<0)                    //make sure we dont go out of bound too low
-		Xdist = -posX;
-	if(posY+Ydist>MAXSIZEY)
-		Ydist = MAXSIZEY-posY;
-	if(posY+Ydist<0)
-		Ydist = -posY;
-	if(Xdist==0&&Ydist==0)
-		return;
-
-	if(DEBUG||penUp)
-	{
-		bool foundX = false;
-		bool foundY = false;
-		if(Xdist>10)    //need to go fowards 
-		{
-			power(motorXA,100);
-			power(motorXB,0);
-		}else if (Xdist<-10)  //need to go backword 
-		{
-			power(motorXA,0);
-			power(motorXB,100);
-		}else if(abs(posX/10-(posX+Xdist)/10)>0)
-		{
-			if(Xdist>0)
-				power(motorXA,50);
-			else
-				power(motorXB,50);
-			while(didTick(1,0)!=1)
-			{
-				safeDelay(1);
-			}
-			power(motorXA,0);
-			power(motorXB,0);
-			int moved;
-			if(Xdist>0)
-			{
-				moved = 10 - posX % 10;
-				posX  += moved;
-				Xdist -= moved;
-				//increment the posX for we moved the machine
-				//decrease the value that we still have to go 
-			}
-			else
-			{
-				moved = posX % 10;
-				moved = (moved == 0)?10:moved;
-				posX  -= moved;
-				Xdist += moved;
-			}
-			foundX = true;
-		
-		}else                //already at the correct x point
-		{
-			power(motorXA,0);
-			power(motorXB,0);
-			foundX = true;
-		}
-		if(Ydist>10)
-		{                      //need to go fowards
-			power(motorYA,100);
-			power(motorYB,0);
-
-		}else if (Ydist<-10)  //need to go backwords
-		{
-			power(motorYA,0);
-			power(motorYB,100);
-		}else if(abs(posY/10-(posY+Ydist)/10)>0)
-		{
-			if(Ydist>0)
-				power(motorYA,50);
-			else
-				power(motorYB,50);
-			while(didTick(0,1)!=-1)
-			{
-				safeDelay(1);
-			}
-			power(motorYA,0);
-			power(motorYB,0);
-			int moved;
-			if(Ydist>0)
-			{
-				moved = 10 - posY % 10;
-				posY  += moved;
-				Ydist -= moved;
-				//increment the posX for we moved the machine
-				//decrease the value that we still have to go 
-			}
-			else
-			{
-				moved = posY % 10;
-				moved = (moved == 0)?10:moved;
-				posY  -= moved;
-				Ydist += moved;
-			}
-			foundY = true;
-		}else              //alrady at the correct pint
-		{
-			power(motorYA,0);
-			power(motorYB,0);
-			foundY = true;
-		}
-		while(!foundX||!foundY)
-		{
-			int result = didTick(!foundX,!foundY);		
-			int moved;
-			if(!foundX)
-			{
-				if(result==1)
-				{
-					if(Xdist>0)
-					{
-						moved = 10 - (posX % 10);
-						posX  += moved;
-						Xdist -= moved;
-						//increment the posY for we moved the machine
-						//decrease the value that we still have to go 
-					}
-					else
-					{
-						moved = posX%10;
-						moved = (moved==0)?10:moved;	
-						posX  -= moved;
-						Xdist += moved;
-					}
-					if(abs(Xdist)<=10)
-					{
-						power(motorXA,0);
-						power(motorXB,0);
-						foundX = true;
-					}
-				}
-
-			}
-			if(!foundY)
-			{
-				if(result==-1)
-				{
-					if(Ydist>0)
-					{
-						moved = 10 - (posY % 10);
-						posY  += moved;
-						Ydist -= moved;
-						//increment the posY for we moved the machine
-						//decrease the value that we still have to go 
-					}
-					else
-					{
-						moved = (posY % 10);
-						moved = (moved==0)?10:moved;	
-						posY  -= moved;
-						Ydist += moved;
-					}
-					if(abs(Ydist)<=10)
-					{
-						power(motorYA,0);
-						power(motorYB,0);
-						foundY = true;
-					}
-				}
-			}
-			safeDelay(1);
-		}
-		if(Xdist!=0 && posX % 10 == 0 && abs(Xdist) % 10 == 0) //if we are lucky and have to move exactly one tick
-		{
-			if(Xdist>0)
-				power(motorXA,50);
-			else
-				power(motorXB,50);
-			while(didTick(1,0)!=1)
-			{
-				safeDelay(1);
-			}
-			power(motorXA,0);
-			power(motorXB,0);
-			if(Xdist>0)
-			{
-				posX  += 10;
-				Xdist -= 10;
-				//increment the posX for we moved the machine
-				//decrease the value that we still have to go 
-			}
-			else
-			{
-				posX  -= 10;
-				Xdist += 10;
-			}
-		}
-		if(Ydist!=0 && posY % 10 == 0 && abs(Ydist) % 10 == 0)
-		{
-			if(Ydist>0)
-				power(motorYA,50);
-			else
-				power(motorYB,50);
-			while(didTick(0,1)!=-1)
-			{
-				safeDelay(1);
-			}
-			power(motorYA,0);
-			power(motorYB,0);
-			if(Ydist>0)
-			{
-				posY  += 10;
-				Ydist -= 10;
-				//increment the posY for we moved the machine
-				//decrease the value that we still have to go 
-			}
-			else
-			{
-				posY  -= 10;
-				Ydist += 10;
-			}
-					
-		}
-		double XtimetoGo, YtimetoGo;                            
-		if(Xdist>0)                                                                                     //0 1 2 3 4 5 6 7 8 9 11 12 13
-													//	      |posX=2     |target=8 xdist=6
-		{                   //becues timing[0] values get bigger as the index increase this is positive           
-			XtimetoGo = (2)*Xdist*(timing[(posX)/10+1][0] - timing[posX/10][0]);
-		}             //becaues we are runing at 50% power and becues it is a fraction of a full tick 
-		else 
-		{                   //becues timing[1] vlues get bigger as the index decrses this is positive
-			XtimetoGo = (-2)*Xdist*(timing[(posX)/10-1][1]- timing[posX/10][1]);
-		}
-		if(Ydist>0)
-		{
-			YtimetoGo = (2)*Ydist*(timing[(posY)/10+1][2] - timing[posY/10][2]);
-		}
-		else 
-		{
-			YtimetoGo = (-2)*Ydist*(timing[(posY)/10-1][3]- timing[posY/10][3]);
-		}
-		XtimetoGo = XtimetoGo * (1000000000/CLOCKS_PER_SEC);//turn it to nano 
-		YtimetoGo = YtimetoGo * (1000000000/CLOCKS_PER_SEC);//turn it to nano
-		if(XtimetoGo<YtimetoGo) //do both at same time and then finish the y change
-		{
-			if(Xdist>0)
-				power(motorXA,50);
-			else
-				power(motorXB,50);
-			if(Ydist>0)
-				power(motorYA,50);
-			else 
-				power(motorYB,50);
-
-			nanosleep((const struct timespec[]){{0,XtimetoGo }}, NULL);
-			power(motorXA,0);
-			power(motorXB,0);
-			nanosleep((const struct timespec[]){{0,YtimetoGo-XtimetoGo }}, NULL);
-			power(motorYA,0);
-			power(motorYB,0);
-		}
-		else
-		{
-			if(Xdist>0)
-				power(motorXA,50);
-			else
-				power(motorXB,50);
-			if(Ydist>0)
-				power(motorYA,50);
-			else 
-				power(motorYB,50);
-
-			nanosleep((const struct timespec[]){{0,YtimetoGo }}, NULL);
-			power(motorYA,0);
-			power(motorYB,0);
-			nanosleep((const struct timespec[]){{0,XtimetoGo-YtimetoGo }}, NULL);
-			power(motorXA,0);
-			power(motorXB,0);
-		}
-		posX += Xdist;
-		posY += Ydist;
-		return;
-		
-	}
-	//so now the pen is down and we need to move very percisly...
-	/// lets do some calulations to see the rates we need to go inorder for reaching the end point at the exact right time
-	double Xtime = 0.0;
-	double Ytime = 0.0;
-	if(Xdist>0) //going foward x wise
-	{                                                                    //                                             |..............|
-		Xtime += timing[(posX+Xdist)/10][0]-timing[posX/10][0];//gets the bigest chuck of the time slot this gets 0.0  x   1.0   2.0  target  3.0
-						                                                                          //   0.3             2.8
-		Xtime += (((double)((Xdist+posX)%10))/10)*(timing[(posX+Xdist)/10+1][0]-timing[(posX+Xdist)/10][0]); 
-												// get the last part of the time interbol  |....| 
-		Xtime -= (((double)(posX%10))/10)*(timing[posX/10+1][0] - timing[posX/10][0]);	//subtract the overshoot we had             |---| 
-	}
-	else if (Xdist < 0) //going backwords x wise
-	{ 														//            |.....|
-		Xtime += timing[(posX+Xdist)/10][1]-timing[posX/10][1];//gets the bigest chuck of the time slot this gets 0.0 target 1.0   2.0  x  3.0
-		
-		Xtime += (((double)(posX%10))/10)*(timing[posX/10][1]-timing[posX/10+1][1]); 	  // get the last part of the time interbol  |..| 
-		
-		Xtime -= (((double)((posX+Xdist)%10))/10)*(timing[(posX+Xdist)/10][1]-timing[(posX+Xdist)/10+1][1]);
-				}
-	else //we are already there 
-	{
-		Xtime = 0.0;
-	}
-	if(Ydist>0) //going foward Y wise
-	{                                                                    //                                             |..............|
-		Ytime += timing[(posY+Ydist)/10][2]-timing[posY/10][2];//gets the bigest chuck of the time slot this gets 0.0  x   1.0   2.0  target  3.0
-						                                                                          //   0.3             2.8
-		Ytime += (((double)((Ydist+posY)%10))/10)*(timing[(posY+Ydist)/10+1][2]-timing[(posY+Ydist)/10][2]); 
-												// get the last part of the time interbol  |....| 
-		Ytime -= (((double)(posY%10))/10)*(timing[posY/10+1][2] - timing[posY/10][2]);	//subtract the overshoot we had             |---| 
-	}
-	else if (Ydist < 0) //going backwords Y wise
-	{ 														//  |++++++++++++++++|
-		Ytime += timing[(posY+Ydist)/10][3]-timing[posY/10][3];//gets the bigest chuck of the time slot this gets 0.0 target 1.0   2.0  x  3.0
-		
-		Ytime += (((double)(posY%10))/10)*(timing[posY/10][3]-timing[posY/10+1][3]); 	  // get the last part of the time interbol  |..| 
-		
-		Ytime -= (((double)((posY+Ydist)%10))/10)*(timing[(posY+Ydist)/10][3]-timing[(posY+Ydist)/10+1][3]);
-													//this subtracts   |----|
-	//redisgingting part
-		//Ytime += timing[posY/10+Ydist/10][3]-timing[posY/10][3];//gets the bigest chuck of the time slot this gets 0.0 target 1.0   2.0  x  3.0
-						                                                                          //   0.3             2.8
-	//jj	Ytime += (((double)(posY%10))/10)*(timing[posY/10][3]-timing[posY/10+1][3]); 			  // get the last part of the time interbol  |..| 
-
-	//	Ytime += (((double)(10-(Ydist+posY)%10))/10)*(timing[(Ydist+posY)/10][3]-timing[((Ydist+posY)/10)+1][3]);// get the first part  |.....| 
-	}
-	else //we are alredy there 
-	{
-		Ytime = 0.0;
-	}
-	if(Ytime==0) //need to just move in the X direction
-	{
-		if(Xdist>10)    //need to go fowards 
-		{
-			power(motorXA,100);
-			power(motorXB,0);
-		}else if (Xdist<-10)  //need to go backword 
-		{
-			power(motorXA,0);
-			power(motorXB,100);
-		}else if(abs(posX/10-(posX+Xdist)/10)>0)
-		{
-			if(Xdist>0)
-				power(motorXA,50);
-			else
-				power(motorXB,50);
-			while(didTick(1,0)!=1)
-			{
-				safeDelay(1);
-			}
-			power(motorXA,0);
-			power(motorXB,0);
-			int moved;
-			if(Xdist>0)
-			{
-				moved = 10 - posX % 10;
-				posX  += moved;
-				Xdist -= moved;
-				//increment the posX for we moved the machine
-				//decrease the value that we still have to go 
-			}
-			else
-			{
-				moved = posX % 10;
-				moved = (moved == 0)?10:moved;
-				posX  -= moved;
-				Xdist += moved;
-			}
-	
-		}	
-	}
-
-}
 
 void penMove(bool goUp)
 {
@@ -1783,8 +1399,8 @@ void PrintRow(char character, int y){
 //+++++++++++++++++++++++++ ErrorText +++++++++++++++++++++++++++++
 void ErrorText(char *message){
   clrscr(MessageY + 2, MessageY + 2);
-  gotoxy (1, MessageY + 2);  
-  printf("Last error: %s", message);
+  move (1, MessageY + 2);  
+  printw("Last error: %s", message);
 }
 //----------------------------- ErrorText ---------------------------
 
@@ -1829,60 +1445,6 @@ void PrintMenue_01(char * PlotFile, double scale, double width, double height, l
 }
 //------------------------- PrintMenue_01 ------------------------------
 
-//+++++++++++++++++++++++++ PrintMenue_02 ++++++++++++++++++++++++++++++
-char *PrintMenue_02(int StartRow, int selected, int plotterMode){
-  char TextLine[300];
-  char OpenDirName[1000];
-  static char FileName[101];
-  char tempChar[100];
-  DIR *pDIR;
-  struct dirent *pDirEnt;
-  int i = 0;  
-  int Discard = 0;
-  
-  clrscr(1, MessageY-2);
-  MessageText("*** Choose plotter file ***", 1, 1, 1);
-   
-  strcpy(OpenDirName, PICTUREPATH);
-  
-
-  pDIR = opendir(OpenDirName);
-  if ( pDIR == NULL ) {
-    sprintf(TextLine, "Could not open directory '%s'!", OpenDirName);
-    MessageText(TextLine, 1, 4, 1);
-    getch();
-    return( "" );
-  }
-
-  pDirEnt = readdir( pDIR );
-  while ( pDirEnt != NULL && i < 10) {
-    strcpy(tempChar, pDirEnt->d_name);
-    if(strlen(pDirEnt->d_name)>4 && ((tempChar[strlen(tempChar)-1] == 'p' && plotterMode == 2) || (tempChar[strlen(tempChar)-1] == 'g' && plotterMode < 2))){
-      if(Discard >= StartRow){
-        if(i + StartRow == selected){
-          sprintf(TextLine, ">%s<", pDirEnt->d_name);
-          strcpy(FileName, pDirEnt->d_name);
-        }
-        else{
-          sprintf(TextLine, " %s ", pDirEnt->d_name); 
-        }
-        MessageText(TextLine, 1, 3 + i, 0);
-        i++;
-      }
-      Discard++;
-
-    }
-    pDirEnt = readdir( pDIR );
-  }  
-
-  gotoxy(MessageX, MessageY + 1);
-  printf("Choose file using up/down keys and confirm with 'Enter' or press 'Esc' to cancel.");
-  
-
-  return (FileName);
-}
-//------------------------- PrintMenue_02 ------------------------------
-
 
 //+++++++++++++++++++++++++ PrintMenue_03 ++++++++++++++++++++++++++++++
 void PrintMenue_03(char *FullFileName, long NumberOfLines, long CurrentLine, long CurrentX, long CurrentY, long StartTime,int Scale){
@@ -1919,7 +1481,6 @@ void PrintMenue_03(char *FullFileName, long NumberOfLines, long CurrentLine, lon
      
 
 }
-//------------------------- PrintMenue_03 ------------------------------
 
 
 
